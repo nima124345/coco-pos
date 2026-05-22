@@ -410,7 +410,7 @@ export default function AdminDashboard() {
                 tickLine={false}
                 axisLine={false}
                 tickFormatter={(v) =>
-                  v >= 1000 ? `${(v / 1000).toFixed(0)}K` : v
+                  v >= 1000 ? `${(v / 1000).toFixed(0)}K` : String(v)
                 }
               />
               <Tooltip
@@ -419,7 +419,7 @@ export default function AdminDashboard() {
                   border: "1px solid #e2e8f0",
                   boxShadow: "0 10px 30px -10px rgb(0 0 0 / 0.15)",
                 }}
-                formatter={(value: number) => formatCurrency(value)}
+                formatter={(value) => formatCurrency(Number(value))}
                 labelFormatter={(v) =>
                   new Date(v).toLocaleDateString("th-TH", {
                     day: "numeric",
@@ -482,7 +482,7 @@ export default function AdminDashboard() {
                       borderRadius: 12,
                       border: "1px solid #e2e8f0",
                     }}
-                    formatter={(value: number) => formatCurrency(value)}
+                    formatter={(value) => formatCurrency(Number(value))}
                   />
                 </PieChart>
               </ResponsiveContainer>
