@@ -1,0 +1,279 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== Branches (fixed only) ====================
+model Branch {
+  id        String   @id @default(cuid())
+  name      String
+  address   String   @default("")
+  note      String   @default("")
+  active    Boolean  @default(true)
+  openedAt  DateTime @default(now())
+  closedAt  DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users          UserBranch[]
+  menuOverrides  MenuItemBranch[]
+  orders         Order[]
+  shifts         Shift[]
+  expenses       Expense[]
+  inventoryItems InventoryItem[]
+  promotions     Promotion[]
+}
+
+// ==================== Booth Events (popup / off-site events) ====================
+model BoothEvent {
+  id        String    @id @default(cuid())
+  name      String
+  location  String    @default("")
+  note      String    @default("")
+  status    String    @default("ACTIVE") // PLANNED | ACTIVE | CLOSED
+  startDate DateTime  @default(now())
+  endDate   DateTime?
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  orders   Order[]
+  shifts   Shift[]
+  expenses Expense[]
+}
+
+// ==================== Users & Auth ====================
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  username  String   @unique
+  password  String
+  role      String   @default("STAFF") // ADMIN | STAFF
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  branches UserBranch[]
+  shifts   Shift[]
+  orders   Order[]
+}
+
+model UserBranch {
+  userId    String
+  branchId  String
+  isDefault Boolean @default(false)
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@id([userId, branchId])
+  @@index([branchId])
+}
+
+// ==================== Categories & Menu ====================
+model Category {
+  id        String     @id @default(cuid())
+  name      String
+  emoji     String     @default("")
+  sortOrder Int        @default(0)
+  active    Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  items     MenuItem[]
+}
+
+model MenuItem {
+  id          String   @id @default(cuid())
+  name        String
+  price       Float
+  shopeePrice Float    @default(0)
+  image       String   @default("")
+  description String   @default("")
+  categoryId  String
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  category        Category         @relation(fields: [categoryId], references: [id])
+  orderItems      OrderItem[]
+  branchOverrides MenuItemBranch[]
+}
+
+model MenuItemBranch {
+  menuItemId  String
+  branchId    String
+  price       Float?
+  shopeePrice Float?
+  active      Boolean?
+
+  menuItem MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  branch   Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@id([menuItemId, branchId])
+  @@index([branchId])
+}
+
+// ==================== Toppings ====================
+model Topping {
+  id        String   @id @default(cuid())
+  name      String
+  price     Float
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orderItemToppings OrderItemTopping[]
+}
+
+// ==================== Orders ====================
+// Exactly one of branchId or boothEventId is set (app-level invariant).
+model Order {
+  id            String   @id @default(cuid())
+  orderNumber   Int
+  subTotal      Float
+  discount      Float    @default(0)
+  netTotal      Float
+  paymentMethod String   @default("CASH")
+  status        String   @default("COMPLETED")
+  voidReason    String   @default("")
+  channel       String   @default("DINE_IN")
+  shopeeOrderId String   @default("")
+  branchId      String?
+  boothEventId  String?
+  staffId       String
+  shiftId       String?
+  promotionId   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  branch     Branch?     @relation(fields: [branchId], references: [id])
+  boothEvent BoothEvent? @relation(fields: [boothEventId], references: [id])
+  staff      User        @relation(fields: [staffId], references: [id])
+  shift      Shift?      @relation(fields: [shiftId], references: [id])
+  promotion  Promotion?  @relation(fields: [promotionId], references: [id])
+  items      OrderItem[]
+
+  @@index([branchId])
+  @@index([boothEventId])
+}
+
+model OrderItem {
+  id             String   @id @default(cuid())
+  orderId        String
+  menuItemId     String
+  menuItemName   String
+  menuItemPrice  Float
+  sweetnessLevel Int      @default(100)
+  quantity       Int      @default(1)
+  itemTotal      Float
+  note           String   @default("")
+  createdAt      DateTime @default(now())
+
+  order    Order              @relation(fields: [orderId], references: [id])
+  menuItem MenuItem           @relation(fields: [menuItemId], references: [id])
+  toppings OrderItemTopping[]
+}
+
+model OrderItemTopping {
+  id           String @id @default(cuid())
+  orderItemId  String
+  toppingId    String
+  toppingName  String
+  toppingPrice Float
+
+  orderItem OrderItem @relation(fields: [orderItemId], references: [id])
+  topping   Topping   @relation(fields: [toppingId], references: [id])
+}
+
+// ==================== Shifts ====================
+model Shift {
+  id             String    @id @default(cuid())
+  branchId       String?
+  boothEventId   String?
+  staffId        String
+  openingCash    Float     @default(0)
+  closingCash    Float?
+  expectedCash   Float?
+  cashDifference Float?
+  note           String    @default("")
+  status         String    @default("OPEN")
+  openedAt       DateTime  @default(now())
+  closedAt       DateTime?
+
+  branch     Branch?     @relation(fields: [branchId], references: [id])
+  boothEvent BoothEvent? @relation(fields: [boothEventId], references: [id])
+  staff      User        @relation(fields: [staffId], references: [id])
+  orders     Order[]
+
+  @@index([branchId])
+  @@index([boothEventId])
+}
+
+// ==================== Expenses ====================
+model ExpenseCategory {
+  id       String    @id @default(cuid())
+  name     String
+  color    String    @default("#6B7280")
+  expenses Expense[]
+}
+
+model Expense {
+  id           String   @id @default(cuid())
+  branchId     String?
+  boothEventId String?
+  title        String
+  amount       Float
+  categoryId   String
+  note         String   @default("")
+  date         DateTime @default(now())
+  createdAt    DateTime @default(now())
+
+  branch     Branch?         @relation(fields: [branchId], references: [id])
+  boothEvent BoothEvent?     @relation(fields: [boothEventId], references: [id])
+  category   ExpenseCategory @relation(fields: [categoryId], references: [id])
+
+  @@index([branchId])
+  @@index([boothEventId])
+}
+
+// ==================== Promotions ====================
+model Promotion {
+  id        String    @id @default(cuid())
+  branchId  String?
+  name      String
+  type      String    @default("PERCENT")
+  value     Float
+  active    Boolean   @default(true)
+  startDate DateTime?
+  endDate   DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  branch Branch? @relation(fields: [branchId], references: [id])
+  orders Order[]
+
+  @@index([branchId])
+}
+
+// ==================== Inventory (per branch only) ====================
+model InventoryItem {
+  id        String   @id @default(cuid())
+  branchId  String
+  name      String
+  unit      String   @default("ชิ้น")
+  quantity  Float    @default(0)
+  minStock  Float    @default(0)
+  costPrice Float    @default(0)
+  sortOrder Int      @default(0)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  branch Branch @relation(fields: [branchId], references: [id])
+
+  @@index([branchId])
+}
