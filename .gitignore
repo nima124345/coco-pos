@@ -47,3 +47,8 @@ next-env.d.ts
 *.db-journal
 prisma/*.db
 prisma/*.db-journal
+
+# screenshots / scratch images
+สกรีนช็อต*.png
+**/สกรีนช็อต*.png
+*.jpg
