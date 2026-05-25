@@ -18,10 +18,17 @@ interface LoginResponse {
 }
 
 export default function LoginPage() {
+  const [mode, setMode] = useState<"login" | "register">("login");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [regName, setRegName] = useState("");
+  const [regUsername, setRegUsername] = useState("");
+  const [regPassword, setRegPassword] = useState("");
+  const [regConfirmPassword, setRegConfirmPassword] = useState("");
+  const [regRole, setRegRole] = useState<"ADMIN" | "STAFF">("STAFF");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
   const [pendingUser, setPendingUser] = useState<LoginResponse | null>(null);
   const [contextTab, setContextTab] = useState<"BRANCH" | "BOOTH">("BRANCH");
@@ -87,6 +94,60 @@ export default function LoginPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+
+    if (regPassword !== regConfirmPassword) {
+      setError("รหัสผ่านไม่ตรงกัน");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: regName,
+          username: regUsername,
+          password: regPassword,
+          role: regRole,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "สมัครสมาชิกไม่สำเร็จ");
+        return;
+      }
+
+      setSuccess("สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ");
+      setRegName("");
+      setRegUsername("");
+      setRegPassword("");
+      setRegConfirmPassword("");
+      setRegRole("STAFF");
+      setTimeout(() => {
+        setMode("login");
+        setUsername(data.username);
+        setSuccess("");
+      }, 1500);
+    } catch {
+      setError("เกิดข้อผิดพลาด กรุณาลองใหม่");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const switchMode = (newMode: "login" | "register") => {
+    setMode(newMode);
+    setError("");
+    setSuccess("");
   };
 
   const fillDemo = (role: "admin" | "staff") => {
@@ -164,94 +225,239 @@ export default function LoginPage() {
               ระบบพร้อมใช้งาน
             </div>
             <h2 className="text-3xl font-bold text-slate-900 mb-2">
-              ยินดีต้อนรับกลับ 👋
+              {mode === "login" ? "ยินดีต้อนรับกลับ 👋" : "สมัครสมาชิก 📝"}
             </h2>
-            <p className="text-slate-500">กรอกข้อมูลเพื่อเข้าใช้งานระบบ POS</p>
+            <p className="text-slate-500">
+              {mode === "login"
+                ? "กรอกข้อมูลเพื่อเข้าใช้งานระบบ POS"
+                : "สร้างบัญชีใหม่เพื่อเข้าใช้งานระบบ"}
+            </p>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-5">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">ชื่อผู้ใช้</label>
-              <Input
-                placeholder="กรอกชื่อผู้ใช้"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                autoFocus
-                className="h-12 rounded-2xl border-slate-200 focus:border-green-500 focus:ring-green-500/20"
-              />
-            </div>
+          {mode === "login" ? (
+            <>
+              <form onSubmit={handleLogin} className="space-y-5">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">ชื่อผู้ใช้</label>
+                  <Input
+                    placeholder="กรอกชื่อผู้ใช้"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    autoFocus
+                    className="h-12 rounded-2xl border-slate-200 focus:border-green-500 focus:ring-green-500/20"
+                  />
+                </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">รหัสผ่าน</label>
-              <div className="relative">
-                <Input
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="pr-11 h-12 rounded-2xl border-slate-200 focus:border-green-500 focus:ring-green-500/20"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer text-xs"
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">รหัสผ่าน</label>
+                  <div className="relative">
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="pr-11 h-12 rounded-2xl border-slate-200 focus:border-green-500 focus:ring-green-500/20"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer text-xs"
+                    >
+                      {showPassword ? "🙈" : "👁️"}
+                    </button>
+                  </div>
+                </div>
+
+                {error && (
+                  <div className="bg-red-50 border border-red-200 text-red-600 text-sm p-3.5 rounded-2xl">
+                    {error}
+                  </div>
+                )}
+
+                <Button
+                  type="submit"
+                  size="lg"
+                  className="w-full h-12 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold rounded-2xl shadow-lg shadow-green-500/30"
+                  disabled={loading}
                 >
-                  {showPassword ? "🙈" : "👁️"}
-                </button>
+                  {loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ →"}
+                </Button>
+              </form>
+
+              <div className="mt-6 text-center">
+                <p className="text-sm text-slate-500">
+                  ยังไม่มีบัญชี?{" "}
+                  <button
+                    type="button"
+                    onClick={() => switchMode("register")}
+                    className="text-green-600 hover:text-green-700 font-semibold cursor-pointer"
+                  >
+                    สมัครสมาชิก
+                  </button>
+                </p>
               </div>
-            </div>
 
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-600 text-sm p-3.5 rounded-2xl">
-                {error}
+              <div className="mt-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="h-px bg-slate-200 flex-1" />
+                  <span className="text-xs text-slate-400 uppercase tracking-wider font-medium">
+                    บัญชีทดสอบ
+                  </span>
+                  <div className="h-px bg-slate-200 flex-1" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => fillDemo("admin")}
+                    className="text-left p-3 rounded-2xl border border-slate-200 hover:border-green-300 hover:bg-green-50/50 cursor-pointer"
+                  >
+                    <div className="text-xs font-semibold text-slate-700 mb-1">
+                      👑 Admin
+                    </div>
+                    <code className="text-[11px] text-slate-500 font-mono">
+                      admin / 1234
+                    </code>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => fillDemo("staff")}
+                    className="text-left p-3 rounded-2xl border border-slate-200 hover:border-green-300 hover:bg-green-50/50 cursor-pointer"
+                  >
+                    <div className="text-xs font-semibold text-slate-700 mb-1">
+                      🧑‍💼 Staff
+                    </div>
+                    <code className="text-[11px] text-slate-500 font-mono">
+                      staff / 1234
+                    </code>
+                  </button>
+                </div>
               </div>
-            )}
-
-            <Button
-              type="submit"
-              size="lg"
-              className="w-full h-12 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold rounded-2xl shadow-lg shadow-green-500/30"
-              disabled={loading}
-            >
-              {loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ →"}
-            </Button>
-          </form>
-
-          <div className="mt-8">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="h-px bg-slate-200 flex-1" />
-              <span className="text-xs text-slate-400 uppercase tracking-wider font-medium">
-                บัญชีทดสอบ
-              </span>
-              <div className="h-px bg-slate-200 flex-1" />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => fillDemo("admin")}
-                className="text-left p-3 rounded-2xl border border-slate-200 hover:border-green-300 hover:bg-green-50/50 cursor-pointer"
-              >
-                <div className="text-xs font-semibold text-slate-700 mb-1">
-                  👑 Admin
+            </>
+          ) : (
+            <>
+              <form onSubmit={handleRegister} className="space-y-5">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">ชื่อ-นามสกุล</label>
+                  <Input
+                    placeholder="กรอกชื่อ-นามสกุล"
+                    value={regName}
+                    onChange={(e) => setRegName(e.target.value)}
+                    autoFocus
+                    className="h-12 rounded-2xl border-slate-200 focus:border-green-500 focus:ring-green-500/20"
+                  />
                 </div>
-                <code className="text-[11px] text-slate-500 font-mono">
-                  admin / 1234
-                </code>
-              </button>
-              <button
-                type="button"
-                onClick={() => fillDemo("staff")}
-                className="text-left p-3 rounded-2xl border border-slate-200 hover:border-green-300 hover:bg-green-50/50 cursor-pointer"
-              >
-                <div className="text-xs font-semibold text-slate-700 mb-1">
-                  🧑‍💼 Staff
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">ชื่อผู้ใช้</label>
+                  <Input
+                    placeholder="กรอกชื่อผู้ใช้ (อย่างน้อย 3 ตัวอักษร)"
+                    value={regUsername}
+                    onChange={(e) => setRegUsername(e.target.value)}
+                    className="h-12 rounded-2xl border-slate-200 focus:border-green-500 focus:ring-green-500/20"
+                  />
                 </div>
-                <code className="text-[11px] text-slate-500 font-mono">
-                  staff / 1234
-                </code>
-              </button>
-            </div>
-          </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">สิทธิ์การใช้งาน</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setRegRole("ADMIN")}
+                      className={cn(
+                        "p-3.5 rounded-2xl border-2 text-left cursor-pointer transition-all",
+                        regRole === "ADMIN"
+                          ? "border-amber-400 bg-amber-50 shadow-md shadow-amber-500/10"
+                          : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+                      )}
+                    >
+                      <div className="text-lg mb-1">👑</div>
+                      <div className="text-sm font-bold text-slate-900">Admin</div>
+                      <div className="text-[11px] text-slate-500">จัดการระบบทั้งหมด</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRegRole("STAFF")}
+                      className={cn(
+                        "p-3.5 rounded-2xl border-2 text-left cursor-pointer transition-all",
+                        regRole === "STAFF"
+                          ? "border-green-400 bg-green-50 shadow-md shadow-green-500/10"
+                          : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+                      )}
+                    >
+                      <div className="text-lg mb-1">🧑‍💼</div>
+                      <div className="text-sm font-bold text-slate-900">Staff</div>
+                      <div className="text-[11px] text-slate-500">พนักงานขายหน้าร้าน</div>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">รหัสผ่าน</label>
+                  <div className="relative">
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      placeholder="กรอกรหัสผ่าน (อย่างน้อย 4 ตัวอักษร)"
+                      value={regPassword}
+                      onChange={(e) => setRegPassword(e.target.value)}
+                      className="pr-11 h-12 rounded-2xl border-slate-200 focus:border-green-500 focus:ring-green-500/20"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer text-xs"
+                    >
+                      {showPassword ? "🙈" : "👁️"}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">ยืนยันรหัสผ่าน</label>
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="กรอกรหัสผ่านอีกครั้ง"
+                    value={regConfirmPassword}
+                    onChange={(e) => setRegConfirmPassword(e.target.value)}
+                    className="h-12 rounded-2xl border-slate-200 focus:border-green-500 focus:ring-green-500/20"
+                  />
+                </div>
+
+                {error && (
+                  <div className="bg-red-50 border border-red-200 text-red-600 text-sm p-3.5 rounded-2xl">
+                    {error}
+                  </div>
+                )}
+
+                {success && (
+                  <div className="bg-green-50 border border-green-200 text-green-600 text-sm p-3.5 rounded-2xl">
+                    {success}
+                  </div>
+                )}
+
+                <Button
+                  type="submit"
+                  size="lg"
+                  className="w-full h-12 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold rounded-2xl shadow-lg shadow-green-500/30"
+                  disabled={loading}
+                >
+                  {loading ? "กำลังสมัคร..." : "สมัครสมาชิก →"}
+                </Button>
+              </form>
+
+              <div className="mt-6 text-center">
+                <p className="text-sm text-slate-500">
+                  มีบัญชีแล้ว?{" "}
+                  <button
+                    type="button"
+                    onClick={() => switchMode("login")}
+                    className="text-green-600 hover:text-green-700 font-semibold cursor-pointer"
+                  >
+                    เข้าสู่ระบบ
+                  </button>
+                </p>
+              </div>
+            </>
+          )}
         </div>
       </main>
 
