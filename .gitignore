@@ -52,3 +52,5 @@ prisma/*.db-journal
 สกรีนช็อต*.png
 **/สกรีนช็อต*.png
 *.jpg
+
+.vercel

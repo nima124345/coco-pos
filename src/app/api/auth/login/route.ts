@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import bcrypt from "bcryptjs";
 
 export async function POST(req: NextRequest) {
+  try {
   const { username, password } = await req.json();
 
   if (!username || !password) {
@@ -78,4 +79,9 @@ export async function POST(req: NextRequest) {
     branches,
     boothEvents,
   });
+  } catch (e: unknown) {
+    const err = e as Error;
+    console.error("Login error:", err.message, "TURSO_DATABASE_URL:", process.env.TURSO_DATABASE_URL ? "SET" : "NOT SET", "TURSO_AUTH_TOKEN:", process.env.TURSO_AUTH_TOKEN ? "SET" : "NOT SET");
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
 }
