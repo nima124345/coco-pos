@@ -7,8 +7,11 @@ const globalForPrisma = globalThis as unknown as {
 
 function createPrisma(): PrismaClient {
   const tursoUrl = process.env.TURSO_DATABASE_URL;
+  console.log("[DB] TURSO_DATABASE_URL:", tursoUrl ? tursoUrl.slice(0, 30) + "..." : "NOT SET");
+  console.log("[DB] startsWith check:", tursoUrl?.startsWith("libsql://"));
 
   if (tursoUrl && (tursoUrl.startsWith("libsql://") || tursoUrl.startsWith("https://"))) {
+    console.log("[DB] Using Turso adapter");
     const adapter = new PrismaLibSql({
       url: tursoUrl,
       authToken: process.env.TURSO_AUTH_TOKEN,
@@ -16,6 +19,7 @@ function createPrisma(): PrismaClient {
     return new PrismaClient({ adapter });
   }
 
+  console.log("[DB] Using local SQLite");
   return new PrismaClient();
 }
 
