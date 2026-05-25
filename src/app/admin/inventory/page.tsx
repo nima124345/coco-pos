@@ -1,0 +1,249 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { formatCurrency } from "@/lib/utils";
+import { apiFetch } from "@/lib/api";
+import { useAuthStore } from "@/store/auth";
+
+interface InventoryItem {
+  id: string;
+  name: string;
+  unit: string;
+  quantity: number;
+  minStock: number;
+  costPrice: number;
+  active: boolean;
+}
+
+export default function AdminInventoryPage() {
+  const [items, setItems] = useState<InventoryItem[]>([]);
+  const [name, setName] = useState("");
+  const [unit, setUnit] = useState("ชิ้น");
+  const [quantity, setQuantity] = useState("");
+  const [minStock, setMinStock] = useState("");
+  const [costPrice, setCostPrice] = useState("");
+
+  const availableBranches = useAuthStore((s) => s.availableBranches);
+  const currentBranchId = useAuthStore((s) => s.currentBranchId);
+  const currentBoothEventId = useAuthStore((s) => s.currentBoothEventId);
+  const isInBoothMode = !!currentBoothEventId;
+  const currentBranch = availableBranches.find((b) => b.id === currentBranchId);
+
+  const loadData = useCallback(async () => {
+    const res = await apiFetch("/api/inventory");
+    setItems(await res.json());
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const handleAdd = async () => {
+    if (!name) return;
+    await apiFetch("/api/inventory", {
+      method: "POST",
+      body: JSON.stringify({
+        name,
+        unit,
+        quantity: parseFloat(quantity) || 0,
+        minStock: parseFloat(minStock) || 0,
+        costPrice: parseFloat(costPrice) || 0,
+      }),
+    });
+    setName("");
+    setUnit("ชิ้น");
+    setQuantity("");
+    setMinStock("");
+    setCostPrice("");
+    loadData();
+  };
+
+  const handleUpdateQty = async (item: InventoryItem, newQty: number) => {
+    await apiFetch("/api/inventory", {
+      method: "PUT",
+      body: JSON.stringify({ id: item.id, quantity: newQty }),
+    });
+    loadData();
+  };
+
+  return (
+    <div className="p-6 space-y-6">
+      <div>
+        <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100 inline-block mb-2">
+          {isInBoothMode
+            ? "🎪 บูธไม่มีสต็อก (ใช้ของจากสาขาหลัก)"
+            : `🏪 ${currentBranch?.name ?? ""}`}
+        </span>
+        <h1 className="text-2xl font-bold">จัดการสต็อกวัตถุดิบ</h1>
+        <p className="text-slate-500 text-sm">
+          {isInBoothMode
+            ? "ระบบสต็อกใช้ได้ในสาขาประจำเท่านั้น สลับโหมดเพื่อจัดการสต็อก"
+            : "สต็อกของสาขานี้เท่านั้น"}
+        </p>
+      </div>
+
+      <div className="grid grid-cols-3 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>เพิ่มวัตถุดิบ</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div>
+              <label className="text-sm font-medium">ชื่อ</label>
+              <Input
+                placeholder="เช่น นมกล่อง"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">หน่วย</label>
+              <Input
+                placeholder="เช่น กล่อง, กก., ถุง"
+                value={unit}
+                onChange={(e) => setUnit(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">จำนวนเริ่มต้น</label>
+              <Input
+                type="number"
+                placeholder="0"
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">สต็อกขั้นต่ำ (แจ้งเตือน)</label>
+              <Input
+                type="number"
+                placeholder="0"
+                value={minStock}
+                onChange={(e) => setMinStock(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">ราคาต้นทุน/หน่วย</label>
+              <Input
+                type="number"
+                placeholder="0"
+                value={costPrice}
+                onChange={(e) => setCostPrice(e.target.value)}
+              />
+            </div>
+            <Button
+              onClick={handleAdd}
+              className="w-full bg-amber-500 hover:bg-amber-600 text-white"
+            >
+              เพิ่มวัตถุดิบ
+            </Button>
+          </CardContent>
+        </Card>
+
+        <div className="col-span-2">
+          <div className="bg-white rounded-2xl border overflow-hidden">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b bg-slate-50">
+                  <th className="text-left p-3 text-sm font-medium text-slate-500">
+                    วัตถุดิบ
+                  </th>
+                  <th className="text-center p-3 text-sm font-medium text-slate-500">
+                    คงเหลือ
+                  </th>
+                  <th className="text-center p-3 text-sm font-medium text-slate-500">
+                    สต็อกขั้นต่ำ
+                  </th>
+                  <th className="text-right p-3 text-sm font-medium text-slate-500">
+                    ราคาต้นทุน
+                  </th>
+                  <th className="text-center p-3 text-sm font-medium text-slate-500">
+                    สถานะ
+                  </th>
+                  <th className="text-center p-3 text-sm font-medium text-slate-500">
+                    ปรับจำนวน
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((item) => (
+                  <tr key={item.id} className="border-b hover:bg-slate-50">
+                    <td className="p-3">
+                      <p className="font-medium">{item.name}</p>
+                    </td>
+                    <td className="p-3 text-center font-bold">
+                      {item.quantity} {item.unit}
+                    </td>
+                    <td className="p-3 text-center text-sm text-slate-500">
+                      {item.minStock} {item.unit}
+                    </td>
+                    <td className="p-3 text-right text-sm">
+                      {formatCurrency(item.costPrice)}/{item.unit}
+                    </td>
+                    <td className="p-3 text-center">
+                      <Badge
+                        variant={
+                          item.quantity <= item.minStock
+                            ? "destructive"
+                            : item.quantity <= item.minStock * 2
+                            ? "warning"
+                            : "success"
+                        }
+                      >
+                        {item.quantity <= item.minStock
+                          ? "ใกล้หมด!"
+                          : item.quantity <= item.minStock * 2
+                          ? "เหลือน้อย"
+                          : "ปกติ"}
+                      </Badge>
+                    </td>
+                    <td className="p-3 text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <button
+                          onClick={() =>
+                            handleUpdateQty(item, Math.max(0, item.quantity - 1))
+                          }
+                          className="w-7 h-7 rounded bg-red-100 text-red-600 flex items-center justify-center hover:bg-red-200 cursor-pointer"
+                        >
+                          -
+                        </button>
+                        <button
+                          onClick={() =>
+                            handleUpdateQty(item, item.quantity + 1)
+                          }
+                          className="w-7 h-7 rounded bg-green-100 text-green-600 flex items-center justify-center hover:bg-green-200 cursor-pointer"
+                        >
+                          +
+                        </button>
+                        <button
+                          onClick={() => {
+                            const qty = prompt("ใส่จำนวนใหม่:");
+                            if (qty) handleUpdateQty(item, parseFloat(qty));
+                          }}
+                          className="w-7 h-7 rounded bg-blue-100 text-blue-600 flex items-center justify-center hover:bg-blue-200 text-xs cursor-pointer"
+                        >
+                          #
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {items.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="p-8 text-center text-slate-400">
+                      ยังไม่มีวัตถุดิบ
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

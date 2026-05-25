@@ -1,0 +1,81 @@
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
+import bcrypt from "bcryptjs";
+
+export async function POST(req: NextRequest) {
+  const { username, password } = await req.json();
+
+  if (!username || !password) {
+    return NextResponse.json(
+      { error: "กรุณากรอก username และ password" },
+      { status: 400 }
+    );
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { username },
+    include: {
+      branches: {
+        include: {
+          branch: {
+            select: { id: true, name: true, active: true },
+          },
+        },
+      },
+    },
+  });
+
+  if (!user || !user.active) {
+    return NextResponse.json({ error: "ไม่พบผู้ใช้งานนี้" }, { status: 401 });
+  }
+
+  const isValid = await bcrypt.compare(password, user.password);
+  if (!isValid) {
+    return NextResponse.json({ error: "รหัสผ่านไม่ถูกต้อง" }, { status: 401 });
+  }
+
+  // Available branches
+  let branches = user.branches
+    .filter((ub) => ub.branch.active)
+    .map((ub) => ({
+      id: ub.branch.id,
+      name: ub.branch.name,
+      isDefault: ub.isDefault,
+    }));
+
+  if (user.role === "ADMIN" && branches.length === 0) {
+    const all = await prisma.branch.findMany({
+      where: { active: true },
+      select: { id: true, name: true },
+    });
+    branches = all.map((b, i) => ({ ...b, isDefault: i === 0 }));
+  }
+
+  // Active booth events available to everyone
+  const boothEvents = await prisma.boothEvent.findMany({
+    where: { active: true, status: { in: ["ACTIVE", "PLANNED"] } },
+    select: {
+      id: true,
+      name: true,
+      location: true,
+      status: true,
+    },
+    orderBy: { startDate: "desc" },
+  });
+
+  if (branches.length === 0 && boothEvents.length === 0) {
+    return NextResponse.json(
+      { error: "บัญชีนี้ยังไม่ได้กำหนดสาขา และยังไม่มีบูธเปิดอยู่" },
+      { status: 403 }
+    );
+  }
+
+  return NextResponse.json({
+    id: user.id,
+    name: user.name,
+    username: user.username,
+    role: user.role,
+    branches,
+    boothEvents,
+  });
+}
