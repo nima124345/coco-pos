@@ -72,52 +72,20 @@ async function main() {
   console.log("Users created");
 
   // ==================== Categories ====================
-  const teaCat = await prisma.category.create({
-    data: { name: "ชา", emoji: "🍵", sortOrder: 1 },
-  });
-  const coffeeCat = await prisma.category.create({
-    data: { name: "กาแฟ", emoji: "☕", sortOrder: 2 },
-  });
-  const milkCat = await prisma.category.create({
-    data: { name: "นม", emoji: "🥛", sortOrder: 3 },
-  });
-  const smoothieCat = await prisma.category.create({
-    data: { name: "สมูทตี้ผลไม้", emoji: "🍓", sortOrder: 4 },
-  });
-  const specialCat = await prisma.category.create({
-    data: { name: "เมนูพิเศษ", emoji: "✨", sortOrder: 5 },
+  const coconutCat = await prisma.category.create({
+    data: { name: "มะพร้าว", emoji: "🥥", sortOrder: 1 },
   });
 
   console.log("Categories created");
 
   // ==================== Menu Items (global) ====================
   const menuItems = [
-    { name: "ชาไทยเย็น", price: 35, categoryId: teaCat.id },
-    { name: "ชาเขียวปั่น", price: 45, categoryId: teaCat.id },
-    { name: "ชาไทยปั่น", price: 45, categoryId: teaCat.id },
-    { name: "ชามะนาว", price: 35, categoryId: teaCat.id },
-    { name: "ชาพีช", price: 40, categoryId: teaCat.id },
-    { name: "ชาลิ้นจี่", price: 40, categoryId: teaCat.id },
-    { name: "เอสเพรสโซ่", price: 40, categoryId: coffeeCat.id },
-    { name: "อเมริกาโน่เย็น", price: 45, categoryId: coffeeCat.id },
-    { name: "ลาเต้เย็น", price: 50, categoryId: coffeeCat.id },
-    { name: "มอคค่าปั่น", price: 55, categoryId: coffeeCat.id },
-    { name: "คาราเมล มัคคิอาโต้", price: 55, categoryId: coffeeCat.id },
-    { name: "นมสดเย็น", price: 30, categoryId: milkCat.id },
-    { name: "โกโก้เย็น", price: 40, categoryId: milkCat.id },
-    { name: "โกโก้ปั่น", price: 45, categoryId: milkCat.id },
-    { name: "นมสตรอว์เบอร์รี่", price: 40, categoryId: milkCat.id },
-    { name: "โอวัลติน", price: 35, categoryId: milkCat.id },
-    { name: "มะม่วงปั่น", price: 50, categoryId: smoothieCat.id },
-    { name: "สตรอว์เบอร์รี่ปั่น", price: 50, categoryId: smoothieCat.id },
-    { name: "แตงโมปั่น", price: 45, categoryId: smoothieCat.id },
-    { name: "กล้วยหอมปั่น", price: 45, categoryId: smoothieCat.id },
-    { name: "เสาวรสปั่น", price: 50, categoryId: smoothieCat.id },
-    { name: "มิกซ์เบอร์รี่ปั่น", price: 55, categoryId: smoothieCat.id },
-    { name: "มะพร้าวปั่น", price: 45, categoryId: specialCat.id },
-    { name: "ชาไข่มุก Brown Sugar", price: 55, categoryId: specialCat.id },
-    { name: "มัทฉะลาเต้", price: 55, categoryId: specialCat.id },
-    { name: "ดาร์กช็อคโกแลต", price: 50, categoryId: specialCat.id },
+    { name: "ลูกมะพร้าว", price: 20, categoryId: coconutCat.id },
+    { name: "น้ำมะพร้าวสดใส่ถุง", price: 30, categoryId: coconutCat.id },
+    { name: "น้ำมะพร้าวสดใส่แก้ว", price: 20, categoryId: coconutCat.id },
+    { name: "มะพร้าวปั่น", price: 25, categoryId: coconutCat.id },
+    { name: "มะพร้าวปั่นนมสด", price: 30, categoryId: coconutCat.id },
+    { name: "สตรอเบอร์รี่โคโคนัทมิลค์", price: 50, categoryId: coconutCat.id },
   ];
 
   for (const item of menuItems) {
@@ -128,14 +96,14 @@ async function main() {
 
   // ==================== Toppings ====================
   const toppingsData = [
-    { name: "ไข่มุก", price: 10 },
+    { name: "สาคูใบเตย", price: 5 },
+    { name: "แมงลัก", price: 5 },
+    { name: "ลอดช่อง", price: 5 },
+    { name: "เยลลี่ปีโป้", price: 5 },
+    { name: "โอริโอ้ครัมเบิ้ล", price: 10 },
+    { name: "เนื้อมะพร้าว", price: 10 },
+    { name: "ซอสสตรอเบอร์รี่", price: 10 },
     { name: "วุ้นมะพร้าว", price: 10 },
-    { name: "วิปครีม", price: 15 },
-    { name: "เจลลี่", price: 10 },
-    { name: "ช็อตเอสเพรสโซ่", price: 15 },
-    { name: "ครีมชีส", price: 20 },
-    { name: "พุดดิ้ง", price: 15 },
-    { name: "อัลมอนด์", price: 10 },
   ];
 
   for (const topping of toppingsData) {
@@ -147,12 +115,14 @@ async function main() {
   // ==================== Expense Categories ====================
   const expCats = [
     { name: "ค่าวัตถุดิบ", color: "#EF4444" },
-    { name: "ค่าเช่าร้าน", color: "#3B82F6" },
-    { name: "ค่าน้ำ/ค่าไฟ", color: "#8B5CF6" },
-    { name: "ค่าแรงพนักงาน", color: "#F59E0B" },
-    { name: "ค่าบรรจุภัณฑ์ (แก้ว/ฝา/หลอด)", color: "#EC4899" },
-    { name: "ค่าโฆษณา/การตลาด", color: "#10B981" },
-    { name: "ค่าวัสดุสิ้นเปลือง", color: "#6366F1" },
+    { name: "ค่าบรรจุภัณฑ์", color: "#EC4899" },
+    { name: "ค่าพนักงาน", color: "#F59E0B" },
+    { name: "ค่าอาหาร", color: "#F97316" },
+    { name: "ค่าเช่าบูธ", color: "#3B82F6" },
+    { name: "ค่าเดินทาง", color: "#8B5CF6" },
+    { name: "ค่าการตลาด", color: "#10B981" },
+    { name: "ค่าไฟ", color: "#EAB308" },
+    { name: "ค่าบริหารจัดการ", color: "#6366F1" },
     { name: "ค่าใช้จ่ายอื่นๆ", color: "#6B7280" },
   ];
 

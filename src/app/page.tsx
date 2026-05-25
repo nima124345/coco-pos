@@ -31,7 +31,6 @@ export default function LoginPage() {
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
   const [pendingUser, setPendingUser] = useState<LoginResponse | null>(null);
-  const [contextTab, setContextTab] = useState<"BRANCH" | "BOOTH">("BRANCH");
   const router = useRouter();
   const setUser = useAuthStore((s) => s.setUser);
   const setBranches = useAuthStore((s) => s.setBranches);
@@ -52,9 +51,34 @@ export default function LoginPage() {
     });
     setBranches(data.branches);
     setBoothEvents(data.boothEvents);
-    if (mode === "BRANCH") setBranchContext(contextId);
-    else setBoothContext(contextId);
-    router.push(data.role === "ADMIN" ? "/admin" : "/staff");
+    if (mode === "BRANCH") {
+      setBranchContext(contextId);
+      router.push(data.role === "ADMIN" ? "/admin" : "/staff");
+    } else {
+      setBoothContext(contextId);
+      router.push(data.role === "ADMIN" ? "/admin" : "/staff/booth-summary");
+    }
+  };
+
+  const handleStartBooth = async () => {
+    if (!pendingUser) return;
+    setLoading(true);
+    try {
+      const res = await fetch("/api/booth-events", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "",
+          status: "ACTIVE",
+        }),
+      });
+      const booth = await res.json();
+      finalize(pendingUser, "BOOTH", booth.id);
+    } catch {
+      setError("ไม่สามารถสร้างบูธได้ กรุณาลองใหม่");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -77,17 +101,12 @@ export default function LoginPage() {
       }
 
       const loginData = data as LoginResponse;
-      const noBooths = loginData.boothEvents.length === 0;
-      const noBranches = loginData.branches.length === 0;
 
-      // Auto-select if user has exactly 1 branch and no booths available
-      if (loginData.branches.length === 1 && noBooths) {
+      if (loginData.branches.length === 1) {
         finalize(loginData, "BRANCH", loginData.branches[0].id);
         return;
       }
 
-      // Default tab: prefer branch if available, else booth
-      setContextTab(noBranches ? "BOOTH" : "BRANCH");
       setPendingUser(loginData);
     } catch {
       setError("เกิดข้อผิดพลาด กรุณาลองใหม่");
@@ -468,14 +487,7 @@ export default function LoginPage() {
             onClick={() => setPendingUser(null)}
           />
           <div className="relative w-full h-full sm:h-auto sm:max-h-[92vh] sm:max-w-3xl bg-white sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col">
-            <div
-              className={cn(
-                "px-8 py-6 border-b border-slate-100 bg-gradient-to-br transition-colors",
-                contextTab === "BRANCH"
-                  ? "from-green-50 to-emerald-50"
-                  : "from-orange-50 to-amber-50"
-              )}
-            >
+            <div className="px-8 py-6 border-b border-slate-100 bg-gradient-to-br from-green-50 to-emerald-50">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">
@@ -485,7 +497,7 @@ export default function LoginPage() {
                     เลือกที่จะทำงาน
                   </h3>
                   <p className="text-sm text-slate-600 mt-1">
-                    เลือกสาขาประจำ หรือบูธที่กำลังเปิดอยู่
+                    เลือกสาขาประจำ หรือกดออกบูธ
                   </p>
                 </div>
                 <button
@@ -503,137 +515,60 @@ export default function LoginPage() {
 
             <div className="px-6 sm:px-8 pt-5">
               <div className="flex gap-2 bg-slate-100 rounded-2xl p-1.5">
-                <button
-                  onClick={() => setContextTab("BRANCH")}
-                  disabled={pendingUser.branches.length === 0}
-                  className={cn(
-                    "flex-1 py-3 rounded-xl text-sm sm:text-base font-semibold cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2",
-                    contextTab === "BRANCH"
-                      ? "bg-white text-green-700 shadow-md shadow-green-500/10"
-                      : "text-slate-500 hover:text-slate-700"
-                  )}
-                >
+                <div className="flex-1 py-3 rounded-xl text-sm sm:text-base font-semibold bg-white text-green-700 shadow-md shadow-green-500/10 flex items-center justify-center gap-2">
                   <span className="text-lg">🏪</span>
                   สาขาประจำ
-                  <span
-                    className={cn(
-                      "text-xs font-bold px-2 py-0.5 rounded-full",
-                      contextTab === "BRANCH"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-slate-200 text-slate-500"
-                    )}
-                  >
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700">
                     {pendingUser.branches.length}
                   </span>
-                </button>
+                </div>
                 <button
-                  onClick={() => setContextTab("BOOTH")}
-                  disabled={pendingUser.boothEvents.length === 0}
-                  className={cn(
-                    "flex-1 py-3 rounded-xl text-sm sm:text-base font-semibold cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2",
-                    contextTab === "BOOTH"
-                      ? "bg-white text-orange-700 shadow-md shadow-orange-500/10"
-                      : "text-slate-500 hover:text-slate-700"
-                  )}
+                  onClick={handleStartBooth}
+                  disabled={loading}
+                  className="flex-1 py-3 rounded-xl text-sm sm:text-base font-semibold cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-2 bg-gradient-to-r from-orange-400 to-amber-500 text-white shadow-md shadow-orange-500/20 hover:from-orange-500 hover:to-amber-600"
                 >
                   <span className="text-lg">🎪</span>
-                  ออกบูธ
-                  <span
-                    className={cn(
-                      "text-xs font-bold px-2 py-0.5 rounded-full",
-                      contextTab === "BOOTH"
-                        ? "bg-orange-100 text-orange-700"
-                        : "bg-slate-200 text-slate-500"
-                    )}
-                  >
-                    {pendingUser.boothEvents.length}
-                  </span>
+                  {loading ? "กำลังเข้า..." : "ออกบูธ →"}
                 </button>
               </div>
             </div>
 
             <div className="flex-1 overflow-y-auto px-6 sm:px-8 py-5">
-              {contextTab === "BRANCH" ? (
-                pendingUser.branches.length === 0 ? (
-                  <div className="text-center py-16">
-                    <div className="text-5xl mb-3">🏪</div>
-                    <p className="text-slate-500 font-medium">
-                      คุณยังไม่ได้กำหนดสาขาประจำ
-                    </p>
-                    <p className="text-sm text-slate-400 mt-1">
-                      ติดต่อแอดมินเพื่อเพิ่มสาขา
-                    </p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {pendingUser.branches.map((b) => (
-                      <button
-                        key={b.id}
-                        onClick={() => finalize(pendingUser, "BRANCH", b.id)}
-                        className="group p-5 rounded-2xl border-2 text-left cursor-pointer bg-white border-slate-200 hover:border-green-400 hover:bg-green-50/40 hover:shadow-lg hover:-translate-y-0.5 transition-all"
-                      >
-                        <div className="flex items-start gap-3 mb-2">
-                          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center text-2xl shadow-md shadow-green-500/30 shrink-0">
-                            🏪
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-bold text-slate-900 truncate">
-                              {b.name}
-                            </p>
-                            {b.isDefault && (
-                              <span className="inline-block mt-1 text-[10px] font-semibold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
-                                ⭐ ค่าเริ่มต้น
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-end text-sm font-medium text-slate-400 group-hover:text-green-600 transition-colors">
-                          เลือกสาขานี้ →
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )
-              ) : pendingUser.boothEvents.length === 0 ? (
+              {pendingUser.branches.length === 0 ? (
                 <div className="text-center py-16">
-                  <div className="text-5xl mb-3">🎪</div>
+                  <div className="text-5xl mb-3">🏪</div>
                   <p className="text-slate-500 font-medium">
-                    ตอนนี้ยังไม่มีบูธที่เปิดอยู่
+                    คุณยังไม่ได้กำหนดสาขาประจำ
                   </p>
                   <p className="text-sm text-slate-400 mt-1">
-                    แอดมินสามารถเปิดบูธใหม่ได้ที่หน้าจัดการ
+                    ติดต่อแอดมินเพื่อเพิ่มสาขา
                   </p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {pendingUser.boothEvents.map((b) => (
+                  {pendingUser.branches.map((b) => (
                     <button
                       key={b.id}
-                      onClick={() => finalize(pendingUser, "BOOTH", b.id)}
-                      className="group p-5 rounded-2xl border-2 text-left cursor-pointer bg-white border-slate-200 hover:border-orange-400 hover:bg-orange-50/40 hover:shadow-lg hover:-translate-y-0.5 transition-all"
+                      onClick={() => finalize(pendingUser, "BRANCH", b.id)}
+                      className="group p-5 rounded-2xl border-2 text-left cursor-pointer bg-white border-slate-200 hover:border-green-400 hover:bg-green-50/40 hover:shadow-lg hover:-translate-y-0.5 transition-all"
                     >
                       <div className="flex items-start gap-3 mb-2">
-                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-400 to-amber-600 flex items-center justify-center text-2xl shadow-md shadow-orange-500/30 shrink-0">
-                          🎪
+                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center text-2xl shadow-md shadow-green-500/30 shrink-0">
+                          🏪
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-bold text-slate-900 truncate">
                             {b.name}
                           </p>
-                          {b.location && (
-                            <p className="text-xs text-slate-500 truncate mt-0.5">
-                              📍 {b.location}
-                            </p>
-                          )}
-                          {b.status === "PLANNED" && (
-                            <span className="inline-block mt-1 text-[10px] font-semibold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
-                              📅 วางแผน
+                          {b.isDefault && (
+                            <span className="inline-block mt-1 text-[10px] font-semibold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
+                              ⭐ ค่าเริ่มต้น
                             </span>
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center justify-end text-sm font-medium text-slate-400 group-hover:text-orange-600 transition-colors">
-                        เลือกบูธนี้ →
+                      <div className="flex items-center justify-end text-sm font-medium text-slate-400 group-hover:text-green-600 transition-colors">
+                        เลือกสาขานี้ →
                       </div>
                     </button>
                   ))}

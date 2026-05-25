@@ -30,16 +30,18 @@ model Branch {
 
 // ==================== Booth Events (popup / off-site events) ====================
 model BoothEvent {
-  id        String    @id @default(cuid())
-  name      String
-  location  String    @default("")
-  note      String    @default("")
-  status    String    @default("ACTIVE") // PLANNED | ACTIVE | CLOSED
-  startDate DateTime  @default(now())
-  endDate   DateTime?
-  active    Boolean   @default(true)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id             String    @id @default(cuid())
+  name           String
+  location       String    @default("")
+  note           String    @default("")
+  status         String    @default("ACTIVE") // PLANNED | ACTIVE | CLOSED
+  startDate      DateTime  @default(now())
+  endDate        DateTime?
+  cashIncome     Float     @default(0)
+  transferIncome Float     @default(0)
+  active         Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   orders   Order[]
   shifts   Shift[]

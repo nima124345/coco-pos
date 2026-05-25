@@ -2,7 +2,7 @@
 
 import { useAuthStore } from "@/store/auth";
 import { useRouter, usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -30,6 +30,7 @@ export default function AdminLayout({
   const logout = useAuthStore((s) => s.logout);
   const router = useRouter();
   const pathname = usePathname();
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -41,14 +42,65 @@ export default function AdminLayout({
     }
   }, [user, hasContext, router]);
 
+  useEffect(() => {
+    setDrawerOpen(false);
+  }, [pathname]);
+
   if (!user || user.role !== "ADMIN" || !hasContext) return null;
 
   return (
-    <div className="min-h-screen flex bg-slate-50">
-      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col">
-        <div className="p-4 border-b border-slate-100">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl overflow-hidden ring-2 ring-green-100 shadow-sm">
+    <div className="min-h-screen md:flex md:h-screen md:overflow-hidden bg-slate-50">
+      {/* Mobile top bar — visible below md */}
+      <header className="md:hidden sticky top-0 z-30 bg-white border-b border-slate-200 px-3 py-2 flex items-center gap-2 shadow-sm">
+        <button
+          onClick={() => setDrawerOpen(true)}
+          className="w-11 h-11 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-700 cursor-pointer"
+          aria-label="เปิดเมนู"
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="4" x2="20" y1="6" y2="6" />
+            <line x1="4" x2="20" y1="12" y2="12" />
+            <line x1="4" x2="20" y1="18" y2="18" />
+          </svg>
+        </button>
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <div className="w-9 h-9 rounded-lg overflow-hidden ring-2 ring-green-100 shrink-0">
+            <Image
+              src="/coco-zone-logo.jpg"
+              alt="Coco Zone"
+              width={36}
+              height={36}
+              className="w-full h-full object-cover"
+            />
+          </div>
+          <div className="min-w-0">
+            <h1 className="font-bold text-slate-900 text-sm leading-tight truncate">Coco Zone</h1>
+            <p className="text-[10px] text-green-600 font-medium uppercase tracking-wider">Admin</p>
+          </div>
+        </div>
+      </header>
+
+      {/* Backdrop for mobile drawer */}
+      {drawerOpen && (
+        <div
+          className="md:hidden fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm"
+          onClick={() => setDrawerOpen(false)}
+        />
+      )}
+
+      <aside
+        className={cn(
+          "bg-white border-r border-slate-200 flex flex-col",
+          // Mobile: drawer sliding from left
+          "fixed inset-y-0 left-0 z-50 w-72 max-w-[80vw] transform transition-transform duration-200 ease-out",
+          drawerOpen ? "translate-x-0" : "-translate-x-full",
+          // iPad+: static sidebar
+          "md:relative md:translate-x-0 md:w-64 md:max-w-none md:transition-none md:z-auto"
+        )}
+      >
+        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-11 h-11 rounded-xl overflow-hidden ring-2 ring-green-100 shadow-sm shrink-0">
               <Image
                 src="/coco-zone-logo.jpg"
                 alt="Coco Zone"
@@ -57,13 +109,24 @@ export default function AdminLayout({
                 className="w-full h-full object-cover"
               />
             </div>
-            <div>
+            <div className="min-w-0">
               <h1 className="font-bold text-slate-900 leading-tight">Coco Zone</h1>
               <p className="text-[11px] text-green-600 font-medium uppercase tracking-wider">
                 Admin Panel
               </p>
             </div>
           </div>
+          {/* Close button on mobile only */}
+          <button
+            onClick={() => setDrawerOpen(false)}
+            className="md:hidden w-9 h-9 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-500 cursor-pointer shrink-0"
+            aria-label="ปิดเมนู"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" x2="6" y1="6" y2="18" />
+              <line x1="6" x2="18" y1="6" y2="18" />
+            </svg>
+          </button>
         </div>
 
         <div className="px-3 pt-3">
@@ -78,7 +141,7 @@ export default function AdminLayout({
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all",
+                  "relative flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all min-h-11",
                   active
                     ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-md shadow-green-500/30"
                     : "text-slate-600 hover:bg-green-50 hover:text-green-700"
@@ -111,7 +174,7 @@ export default function AdminLayout({
               logout();
               router.push("/");
             }}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
+            className="w-full flex items-center gap-2 px-3 py-3 text-sm text-red-500 hover:bg-red-50 rounded-xl transition-colors cursor-pointer min-h-11"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -123,7 +186,7 @@ export default function AdminLayout({
         </div>
       </aside>
 
-      <main className="flex-1 overflow-y-auto">{children}</main>
+      <main className="flex-1 overflow-y-auto min-w-0 md:h-screen">{children}</main>
     </div>
   );
 }

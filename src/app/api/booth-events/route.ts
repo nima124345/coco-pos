@@ -24,16 +24,9 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const body = await req.json();
 
-  if (!body.name?.trim()) {
-    return NextResponse.json(
-      { error: "กรุณาระบุชื่องาน/บูธ" },
-      { status: 400 }
-    );
-  }
-
   const event = await prisma.boothEvent.create({
     data: {
-      name: body.name.trim(),
+      name: (body.name || "").trim(),
       location: body.location?.trim() || "",
       note: body.note?.trim() || "",
       status: body.status || "ACTIVE",

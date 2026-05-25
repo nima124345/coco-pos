@@ -18,6 +18,7 @@ interface MenuItem {
   name: string;
   price: number;
   shopeePrice: number;
+  image: string;
   categoryId: string;
   active: boolean;
   category: Category;
@@ -42,6 +43,9 @@ export default function AdminMenuPage() {
   const [menuShopeePrice, setMenuShopeePrice] = useState("");
   const [shopeePriceTouched, setShopeePriceTouched] = useState(false);
   const [menuCategoryId, setMenuCategoryId] = useState("");
+  const [menuImage, setMenuImage] = useState("");
+  const [menuImageFile, setMenuImageFile] = useState<File | null>(null);
+  const [imageUploading, setImageUploading] = useState(false);
   const [editingMenu, setEditingMenu] = useState<MenuItem | null>(null);
 
   // Topping form
@@ -80,6 +84,18 @@ export default function AdminMenuPage() {
     const shopeePrice = menuShopeePrice
       ? parseFloat(menuShopeePrice)
       : price;
+
+    let imageUrl = menuImage;
+    if (menuImageFile) {
+      setImageUploading(true);
+      const formData = new FormData();
+      formData.append("file", menuImageFile);
+      const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
+      const uploadData = await uploadRes.json();
+      imageUrl = uploadData.url || "";
+      setImageUploading(false);
+    }
+
     if (editingMenu) {
       await fetch("/api/menu", {
         method: "PUT",
@@ -89,6 +105,7 @@ export default function AdminMenuPage() {
           name: menuName,
           price,
           shopeePrice,
+          image: imageUrl,
           categoryId: menuCategoryId,
         }),
       });
@@ -101,6 +118,7 @@ export default function AdminMenuPage() {
           name: menuName,
           price,
           shopeePrice,
+          image: imageUrl,
           categoryId: menuCategoryId,
         }),
       });
@@ -109,6 +127,8 @@ export default function AdminMenuPage() {
     setMenuPrice("");
     setMenuShopeePrice("");
     setShopeePriceTouched(false);
+    setMenuImage("");
+    setMenuImageFile(null);
     setShowMenuModal(false);
     loadData();
   };
@@ -176,7 +196,7 @@ export default function AdminMenuPage() {
         <>
           <div className="flex justify-end">
             <Button
-              onClick={() => { setEditingMenu(null); setMenuName(""); setMenuPrice(""); setMenuShopeePrice(""); setShopeePriceTouched(false); setShowMenuModal(true); }}
+              onClick={() => { setEditingMenu(null); setMenuName(""); setMenuPrice(""); setMenuShopeePrice(""); setShopeePriceTouched(false); setMenuImage(""); setMenuImageFile(null); setShowMenuModal(true); }}
               className="h-12 px-6 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-2xl shadow-lg shadow-amber-500/30 text-base"
             >
               + เพิ่มเมนูใหม่
@@ -201,7 +221,18 @@ export default function AdminMenuPage() {
                   const sameAsStore = effectiveShopee === item.price;
                   return (
                     <tr key={item.id} className="border-b hover:bg-slate-50">
-                      <td className="p-3 font-medium">{item.name}</td>
+                      <td className="p-3 font-medium">
+                        <div className="flex items-center gap-3">
+                          {item.image ? (
+                            <img src={item.image} alt={item.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
+                              <span className="text-lg">{item.category?.emoji || "🍹"}</span>
+                            </div>
+                          )}
+                          <span>{item.name}</span>
+                        </div>
+                      </td>
                       <td className="p-3 text-sm text-slate-500">{item.category?.emoji} {item.category?.name}</td>
                       <td className="p-3 text-right font-bold text-amber-600">{formatCurrency(item.price)}</td>
                       <td className="p-3 text-right">
@@ -226,6 +257,8 @@ export default function AdminMenuPage() {
                             setMenuShopeePrice(String(item.shopeePrice > 0 ? item.shopeePrice : item.price));
                             setShopeePriceTouched(item.shopeePrice > 0 && item.shopeePrice !== item.price);
                             setMenuCategoryId(item.categoryId);
+                            setMenuImage(item.image || "");
+                            setMenuImageFile(null);
                             setShowMenuModal(true);
                           }}
                           className="text-blue-500 hover:text-blue-700 text-sm cursor-pointer"
@@ -311,8 +344,51 @@ export default function AdminMenuPage() {
             </div>
             <div className="p-6 space-y-4">
               <div className="space-y-1.5">
+                <label className="text-sm font-medium text-slate-700">รูปภาพเมนู</label>
+                <div className="flex items-center gap-4">
+                  <label className="cursor-pointer flex-shrink-0">
+                    <div className="w-20 h-20 rounded-xl border-2 border-dashed border-slate-300 hover:border-amber-400 transition-colors flex items-center justify-center overflow-hidden bg-slate-50">
+                      {(menuImageFile || menuImage) ? (
+                        <img
+                          src={menuImageFile ? URL.createObjectURL(menuImageFile) : menuImage}
+                          alt="preview"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="text-center">
+                          <svg className="w-6 h-6 mx-auto text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0 0 22.5 18.75V5.25A2.25 2.25 0 0 0 20.25 3H3.75A2.25 2.25 0 0 0 1.5 5.25v13.5A2.25 2.25 0 0 0 3.75 21Z" />
+                          </svg>
+                          <span className="text-[10px] text-slate-400 mt-1">เพิ่มรูป</span>
+                        </div>
+                      )}
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setMenuImageFile(file);
+                        }
+                      }}
+                    />
+                  </label>
+                  {(menuImageFile || menuImage) && (
+                    <button
+                      type="button"
+                      onClick={() => { setMenuImageFile(null); setMenuImage(""); }}
+                      className="text-sm text-red-400 hover:text-red-600 cursor-pointer"
+                    >
+                      ลบรูป
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div className="space-y-1.5">
                 <label className="text-sm font-medium text-slate-700">ชื่อเมนู</label>
-                <Input placeholder="เช่น ชาไทยปั่น" value={menuName} onChange={(e) => setMenuName(e.target.value)} autoFocus className="h-11 rounded-xl" />
+                <Input placeholder="เช่น มะพร้าวปั่น" value={menuName} onChange={(e) => setMenuName(e.target.value)} autoFocus className="h-11 rounded-xl" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
@@ -348,8 +424,8 @@ export default function AdminMenuPage() {
             </div>
             <div className="px-6 pb-6 flex gap-3">
               <Button onClick={() => setShowMenuModal(false)} variant="outline" className="flex-1 h-12 rounded-xl">ยกเลิก</Button>
-              <Button onClick={handleAddMenu} className="flex-1 h-12 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-xl shadow-lg shadow-amber-500/30">
-                {editingMenu ? "บันทึกการแก้ไข" : "เพิ่มเมนู"}
+              <Button onClick={handleAddMenu} disabled={imageUploading} className="flex-1 h-12 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-xl shadow-lg shadow-amber-500/30 disabled:opacity-50">
+                {imageUploading ? "กำลังอัปโหลด..." : editingMenu ? "บันทึกการแก้ไข" : "เพิ่มเมนู"}
               </Button>
             </div>
           </div>

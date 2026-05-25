@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate, cn } from "@/lib/utils";
 
 interface OrderTopping {
   toppingName: string;
@@ -92,7 +92,7 @@ export default function StaffOrdersPage() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-65px)]">
+    <div className="flex md:h-[calc(100vh-65px)] min-h-[calc(100vh-65px-64px)] md:min-h-0">
       {/* Order List */}
       <div className="flex-1 overflow-y-auto p-4">
         <h2 className="text-xl font-bold mb-4">
@@ -154,24 +154,55 @@ export default function StaffOrdersPage() {
         </div>
       </div>
 
-      {/* Order Detail */}
-      <div className="w-96 bg-white border-l flex flex-col">
+      {/* Mobile backdrop when detail open */}
+      {selectedOrder && (
+        <div
+          className="md:hidden fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm"
+          onClick={() => setSelectedOrder(null)}
+        />
+      )}
+
+      {/* Order Detail — bottom sheet on mobile, sidebar on md+ */}
+      <div
+        className={cn(
+          "bg-white flex flex-col shadow-xl",
+          "fixed inset-x-0 bottom-0 z-50 rounded-t-3xl max-h-[90vh] transform transition-transform duration-200 ease-out",
+          selectedOrder ? "translate-y-0" : "translate-y-full",
+          "md:relative md:translate-y-0 md:inset-auto md:w-96 md:rounded-none md:max-h-none md:border-l md:shadow-none md:transition-none md:z-auto"
+        )}
+      >
+        {/* Mobile grab handle */}
+        <div className="md:hidden flex justify-center py-2 shrink-0">
+          <div className="w-12 h-1.5 rounded-full bg-slate-300" />
+        </div>
         {selectedOrder ? (
           <>
             <div className="p-4 border-b">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <h3 className="font-bold text-lg">
                   ออเดอร์ #{selectedOrder.orderNumber}
                 </h3>
-                <Badge
-                  variant={
-                    selectedOrder.status === "COMPLETED"
-                      ? "success"
-                      : "destructive"
-                  }
-                >
-                  {selectedOrder.status === "COMPLETED" ? "สำเร็จ" : "ยกเลิก"}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Badge
+                    variant={
+                      selectedOrder.status === "COMPLETED"
+                        ? "success"
+                        : "destructive"
+                    }
+                  >
+                    {selectedOrder.status === "COMPLETED" ? "สำเร็จ" : "ยกเลิก"}
+                  </Badge>
+                  <button
+                    onClick={() => setSelectedOrder(null)}
+                    className="md:hidden w-9 h-9 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-500 cursor-pointer"
+                    aria-label="ปิด"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="18" x2="6" y1="6" y2="18" />
+                      <line x1="6" x2="18" y1="6" y2="18" />
+                    </svg>
+                  </button>
+                </div>
               </div>
               <p className="text-sm text-slate-500 mt-1">
                 {formatDate(selectedOrder.createdAt)}

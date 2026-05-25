@@ -58,6 +58,7 @@ export default function StaffPOS() {
   const [shopeeOrderId, setShopeeOrderId] = useState("");
   const [cashReceived, setCashReceived] = useState("");
   const [orderSuccess, setOrderSuccess] = useState<number | null>(null);
+  const [cartOpenMobile, setCartOpenMobile] = useState(false);
 
   const user = useAuthStore((s) => s.user);
   const shiftId = useAuthStore((s) => s.shiftId);
@@ -204,7 +205,10 @@ export default function StaffPOS() {
       setCashReceived("");
       setShopeeOrderId("");
       setChannel("DINE_IN");
-      setTimeout(() => setOrderSuccess(null), 3500);
+      setTimeout(() => {
+        setOrderSuccess(null);
+        setCartOpenMobile(false);
+      }, 3500);
     }
   };
 
@@ -214,8 +218,8 @@ export default function StaffPOS() {
       : 0;
 
   return (
-    <div className="flex h-[calc(100vh-65px)] bg-slate-50">
-      <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="flex flex-col md:flex-row md:h-[calc(100vh-65px)] bg-slate-50">
+      <div className="flex-1 flex flex-col overflow-hidden min-h-[calc(100vh-65px-64px)] md:min-h-0">
         <div className="bg-white border-b border-slate-200 px-4 py-3 space-y-3">
           <div className="flex items-center gap-2">
             <div className="relative flex-1 max-w-md">
@@ -319,7 +323,29 @@ export default function StaffPOS() {
         </div>
       </div>
 
-      <aside className="w-96 bg-white border-l border-slate-200 flex flex-col shadow-xl">
+      {/* Mobile cart backdrop */}
+      {cartOpenMobile && (
+        <div
+          className="md:hidden fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm"
+          onClick={() => setCartOpenMobile(false)}
+        />
+      )}
+
+      <aside
+        className={cn(
+          "bg-white flex flex-col shadow-xl",
+          // Mobile: fixed bottom sheet
+          "fixed inset-x-0 bottom-0 z-50 rounded-t-3xl max-h-[92vh] transform transition-transform duration-200 ease-out",
+          cartOpenMobile ? "translate-y-0" : "translate-y-full",
+          // iPad+: static sidebar
+          "md:relative md:translate-y-0 md:inset-auto md:w-80 lg:w-96 md:rounded-none md:max-h-none md:border-l md:border-slate-200 md:transition-none md:z-auto"
+        )}
+      >
+        {/* Mobile grab handle */}
+        <div className="md:hidden flex justify-center py-2 shrink-0">
+          <div className="w-12 h-1.5 rounded-full bg-slate-300" />
+        </div>
+
         <div className="p-4 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="relative">
@@ -339,15 +365,27 @@ export default function StaffPOS() {
               </p>
             </div>
           </div>
-          {cart.length > 0 && !showPayment && (
+          <div className="flex items-center gap-2">
+            {cart.length > 0 && !showPayment && (
+              <button
+                onClick={clearCart}
+                className="text-xs text-slate-400 hover:text-red-500 cursor-pointer px-2 py-1"
+                title="ล้างตะกร้า"
+              >
+                ล้าง
+              </button>
+            )}
             <button
-              onClick={clearCart}
-              className="text-xs text-slate-400 hover:text-red-500 cursor-pointer"
-              title="ล้างตะกร้า"
+              onClick={() => setCartOpenMobile(false)}
+              className="md:hidden w-9 h-9 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-500 cursor-pointer"
+              aria-label="ปิดตะกร้า"
             >
-              ล้าง
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" x2="6" y1="6" y2="18" />
+                <line x1="6" x2="18" y1="6" y2="18" />
+              </svg>
             </button>
-          )}
+          </div>
         </div>
 
         {orderSuccess && (
@@ -405,10 +443,10 @@ export default function StaffPOS() {
                 </div>
                 <button
                   onClick={() => removeItem(item.cartId)}
-                  className="text-slate-300 hover:text-red-500 transition-colors cursor-pointer shrink-0"
-                  title="ลบรายการ"
+                  className="w-10 h-10 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 active:bg-red-100 transition-colors cursor-pointer shrink-0 flex items-center justify-center"
+                  aria-label="ลบรายการ"
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="18" x2="6" y1="6" y2="18" />
                     <line x1="6" x2="18" y1="6" y2="18" />
                   </svg>
@@ -420,18 +458,20 @@ export default function StaffPOS() {
                     onClick={() =>
                       updateQuantity(item.cartId, item.quantity - 1)
                     }
-                    className="w-7 h-7 rounded-md hover:bg-slate-100 flex items-center justify-center text-slate-600 cursor-pointer"
+                    className="w-10 h-10 rounded-md hover:bg-slate-100 active:bg-slate-200 flex items-center justify-center text-slate-600 cursor-pointer text-lg"
+                    aria-label="ลดจำนวน"
                   >
                     −
                   </button>
-                  <span className="font-bold text-sm w-7 text-center text-slate-900">
+                  <span className="font-bold text-base w-8 text-center text-slate-900">
                     {item.quantity}
                   </span>
                   <button
                     onClick={() =>
                       updateQuantity(item.cartId, item.quantity + 1)
                     }
-                    className="w-7 h-7 rounded-md hover:bg-slate-100 flex items-center justify-center text-slate-600 cursor-pointer"
+                    className="w-10 h-10 rounded-md hover:bg-slate-100 active:bg-slate-200 flex items-center justify-center text-slate-600 cursor-pointer text-lg"
+                    aria-label="เพิ่มจำนวน"
                   >
                     +
                   </button>
@@ -607,7 +647,7 @@ export default function StaffPOS() {
                         <button
                           key={amt}
                           onClick={() => setCashReceived(String(amt))}
-                          className="py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm font-semibold text-slate-700 cursor-pointer transition-colors"
+                          className="py-3 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 rounded-lg text-sm font-semibold text-slate-700 cursor-pointer transition-colors min-h-11"
                         >
                           {amt}
                         </button>
@@ -615,7 +655,7 @@ export default function StaffPOS() {
                     </div>
                     <button
                       onClick={() => setCashReceived(String(effectiveSubTotal))}
-                      className="w-full py-2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg text-sm font-semibold text-emerald-700 cursor-pointer transition-colors"
+                      className="w-full py-3 bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 border border-emerald-200 rounded-lg text-sm font-semibold text-emerald-700 cursor-pointer transition-colors min-h-11"
                     >
                       พอดี {formatCurrency(effectiveSubTotal)}
                     </button>
@@ -657,6 +697,46 @@ export default function StaffPOS() {
           </div>
         )}
       </aside>
+
+      {/* Mobile floating cart bar — sits above bottom nav (bottom-16 = 64px) */}
+      {!cartOpenMobile && (
+        <button
+          onClick={() => setCartOpenMobile(true)}
+          className={cn(
+            "md:hidden fixed left-3 right-3 bottom-[72px] z-30 rounded-2xl shadow-lg flex items-center justify-between px-4 py-3 transition-all active:scale-[0.98]",
+            cart.length > 0
+              ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-green-500/40"
+              : "bg-white border border-slate-200 text-slate-500"
+          )}
+        >
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="relative">
+              <span className="text-2xl">🛒</span>
+              {itemCount > 0 && (
+                <span className="absolute -top-1 -right-2 min-w-[20px] h-5 px-1.5 rounded-full bg-white text-emerald-700 text-[11px] font-bold flex items-center justify-center shadow-sm">
+                  {itemCount}
+                </span>
+              )}
+            </div>
+            <div className="text-left">
+              <p className="text-xs font-medium opacity-90 leading-tight">
+                {cart.length > 0 ? `${cart.length} เมนู • ${itemCount} แก้ว` : "ตะกร้าว่าง"}
+              </p>
+              {cart.length > 0 && (
+                <p className="text-sm font-bold leading-tight">
+                  {formatCurrency(effectiveSubTotal)}
+                </p>
+              )}
+            </div>
+          </div>
+          <span className="text-sm font-semibold flex items-center gap-1">
+            {cart.length > 0 ? "ดูตะกร้า" : "เลือกเมนู"}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m9 18 6-6-6-6" />
+            </svg>
+          </span>
+        </button>
+      )}
 
       {selectedItem && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
