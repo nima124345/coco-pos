@@ -88,12 +88,16 @@ export default function AdminMenuPage() {
     let imageUrl = menuImage;
     if (menuImageFile) {
       setImageUploading(true);
-      const formData = new FormData();
-      formData.append("file", menuImageFile);
-      const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
-      if (uploadRes.ok) {
-        const uploadData = await uploadRes.json();
-        imageUrl = uploadData.url || "";
+      try {
+        const formData = new FormData();
+        formData.append("file", menuImageFile);
+        const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json();
+          imageUrl = uploadData.url || "";
+        }
+      } catch {
+        // upload not supported in this environment
       }
       setImageUploading(false);
     }
