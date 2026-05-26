@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 
 export async function POST(req: NextRequest) {
   try {
-    const { name, username, password, role } = await req.json();
+    const { name, username, password, role, branchIds } = await req.json();
     const validRole = role === "ADMIN" ? "ADMIN" : "STAFF";
 
     if (!name || !username || !password) {
@@ -41,12 +41,24 @@ export async function POST(req: NextRequest) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    const branchConnect = Array.isArray(branchIds) && branchIds.length > 0
+      ? {
+          branches: {
+            create: branchIds.map((branchId: string, i: number) => ({
+              branchId,
+              isDefault: i === 0,
+            })),
+          },
+        }
+      : {};
+
     const user = await prisma.user.create({
       data: {
         name,
         username,
         password: hashedPassword,
         role: validRole,
+        ...branchConnect,
       },
     });
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuthStore, AuthBranch, AuthBoothEvent } from "@/store/auth";
@@ -26,6 +26,8 @@ export default function LoginPage() {
   const [regPassword, setRegPassword] = useState("");
   const [regConfirmPassword, setRegConfirmPassword] = useState("");
   const [regRole, setRegRole] = useState<"ADMIN" | "STAFF">("STAFF");
+  const [regBranchIds, setRegBranchIds] = useState<string[]>([]);
+  const [allBranches, setAllBranches] = useState<{ id: string; name: string }[]>([]);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -37,6 +39,15 @@ export default function LoginPage() {
   const setBoothEvents = useAuthStore((s) => s.setBoothEvents);
   const setBranchContext = useAuthStore((s) => s.setBranchContext);
   const setBoothContext = useAuthStore((s) => s.setBoothContext);
+
+  useEffect(() => {
+    if (mode === "register" && allBranches.length === 0) {
+      fetch("/api/branches")
+        .then((r) => r.json())
+        .then((data) => setAllBranches(data.map((b: { id: string; name: string }) => ({ id: b.id, name: b.name }))))
+        .catch(() => {});
+    }
+  }, [mode, allBranches.length]);
 
   const finalize = (
     data: LoginResponse,
@@ -135,6 +146,7 @@ export default function LoginPage() {
           username: regUsername,
           password: regPassword,
           role: regRole,
+          branchIds: regBranchIds,
         }),
       });
 
@@ -151,6 +163,7 @@ export default function LoginPage() {
       setRegPassword("");
       setRegConfirmPassword("");
       setRegRole("STAFF");
+      setRegBranchIds([]);
       setTimeout(() => {
         setMode("login");
         setUsername(data.username);
@@ -411,6 +424,48 @@ export default function LoginPage() {
                     </button>
                   </div>
                 </div>
+
+                {allBranches.length > 0 && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">สาขาที่ประจำ</label>
+                  <div className="grid grid-cols-1 gap-2">
+                    {allBranches.map((b) => (
+                      <button
+                        key={b.id}
+                        type="button"
+                        onClick={() =>
+                          setRegBranchIds((prev) =>
+                            prev.includes(b.id)
+                              ? prev.filter((id) => id !== b.id)
+                              : [...prev, b.id]
+                          )
+                        }
+                        className={cn(
+                          "p-3 rounded-2xl border-2 text-left cursor-pointer transition-all flex items-center gap-3",
+                          regBranchIds.includes(b.id)
+                            ? "border-green-400 bg-green-50 shadow-md shadow-green-500/10"
+                            : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+                        )}
+                      >
+                        <div className={cn(
+                          "w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors",
+                          regBranchIds.includes(b.id)
+                            ? "border-green-500 bg-green-500 text-white"
+                            : "border-slate-300"
+                        )}>
+                          {regBranchIds.includes(b.id) && (
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                          )}
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium text-slate-900">🏪 {b.name}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-slate-400">เลือกได้หลายสาขา (ไม่เลือกก็ได้)</p>
+                </div>
+                )}
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-700">รหัสผ่าน</label>
