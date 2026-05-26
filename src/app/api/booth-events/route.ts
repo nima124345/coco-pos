@@ -22,20 +22,25 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
+  try {
+    const body = await req.json();
 
-  const event = await prisma.boothEvent.create({
-    data: {
-      name: (body.name || "").trim(),
-      location: body.location?.trim() || "",
-      note: body.note?.trim() || "",
-      status: body.status || "ACTIVE",
-      startDate: body.startDate ? new Date(body.startDate) : new Date(),
-      endDate: body.endDate ? new Date(body.endDate) : null,
-    },
-  });
+    const event = await prisma.boothEvent.create({
+      data: {
+        name: body.name?.trim() || "บูธ " + new Date().toLocaleDateString("th-TH"),
+        location: body.location?.trim() || "",
+        note: body.note?.trim() || "",
+        status: body.status || "ACTIVE",
+        startDate: body.startDate ? new Date(body.startDate) : new Date(),
+        endDate: body.endDate ? new Date(body.endDate) : null,
+      },
+    });
 
-  return NextResponse.json(event);
+    return NextResponse.json(event);
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
 
 export async function PUT(req: NextRequest) {
