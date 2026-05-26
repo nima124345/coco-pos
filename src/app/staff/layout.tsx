@@ -2,7 +2,7 @@
 
 import { useAuthStore } from "@/store/auth";
 import { useRouter, usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -28,20 +28,31 @@ export default function StaffLayout({
   const logout = useAuthStore((s) => s.logout);
   const router = useRouter();
   const pathname = usePathname();
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
+    if (useAuthStore.persist.hasHydrated()) {
+      setHydrated(true);
+    } else {
+      const unsub = useAuthStore.persist.onFinishHydration(() => setHydrated(true));
+      return () => unsub();
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
     if (!user) {
       router.push("/");
     } else if (!hasContext) {
       router.push("/");
     }
-  }, [user, hasContext, router]);
+  }, [user, hasContext, router, hydrated]);
 
   const staffNavItems = currentBoothEventId
     ? [...baseNavItems, boothNavItem]
     : baseNavItems;
 
-  if (!user || !hasContext) return null;
+  if (!hydrated || !user || !hasContext) return null;
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">

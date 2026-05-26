@@ -31,8 +31,19 @@ export default function AdminLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
+    if (useAuthStore.persist.hasHydrated()) {
+      setHydrated(true);
+    } else {
+      const unsub = useAuthStore.persist.onFinishHydration(() => setHydrated(true));
+      return () => unsub();
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
     if (!user) {
       router.push("/");
     } else if (user.role !== "ADMIN") {
@@ -40,13 +51,13 @@ export default function AdminLayout({
     } else if (!hasContext) {
       router.push("/");
     }
-  }, [user, hasContext, router]);
+  }, [user, hasContext, router, hydrated]);
 
   useEffect(() => {
     setDrawerOpen(false);
   }, [pathname]);
 
-  if (!user || user.role !== "ADMIN" || !hasContext) return null;
+  if (!hydrated || !user || user.role !== "ADMIN" || !hasContext) return null;
 
   return (
     <div className="min-h-screen md:flex md:h-screen md:overflow-hidden bg-slate-50">
