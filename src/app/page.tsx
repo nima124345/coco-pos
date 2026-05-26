@@ -316,6 +316,7 @@ export default function LoginPage() {
                 </p>
               </div>
 
+              {process.env.NODE_ENV === 'development' && (
               <div className="mt-6">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="h-px bg-slate-200 flex-1" />
@@ -351,6 +352,7 @@ export default function LoginPage() {
                   </button>
                 </div>
               </div>
+              )}
             </>
           ) : (
             <>

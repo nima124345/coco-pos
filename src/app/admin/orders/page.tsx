@@ -72,12 +72,17 @@ export default function AdminOrdersPage() {
   const isInBoothMode = !!currentBoothEventId;
   const currentBranch = availableBranches.find((b) => b.id === currentBranchId);
   const currentBooth = availableBoothEvents.find((b) => b.id === currentBoothEventId);
+  const [loading, setLoading] = useState(true);
 
   const loadOrders = useCallback(async () => {
-    const qs = new URLSearchParams({ date: filterDate, limit: "200" });
-    if (scope !== "current") qs.set("scope", scope);
-    const res = await apiFetch(`/api/orders?${qs.toString()}`);
-    setOrders(await res.json());
+    try {
+      const qs = new URLSearchParams({ date: filterDate, limit: "200" });
+      if (scope !== "current") qs.set("scope", scope);
+      const res = await apiFetch(`/api/orders?${qs.toString()}`);
+      setOrders(await res.json());
+    } finally {
+      setLoading(false);
+    }
   }, [filterDate, scope]);
 
   useEffect(() => {
@@ -118,6 +123,15 @@ export default function AdminOrdersPage() {
     a.click();
     URL.revokeObjectURL(url);
   };
+
+  if (loading) return (
+    <div className="flex-1 flex items-center justify-center p-12">
+      <div className="text-center">
+        <div className="w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+        <p className="text-slate-500 text-sm">กำลังโหลดข้อมูล...</p>
+      </div>
+    </div>
+  );
 
   return (
     <div className="p-6 space-y-6">

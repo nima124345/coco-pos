@@ -60,18 +60,23 @@ export default function AdminMenuPage() {
   const [showMenuModal, setShowMenuModal] = useState(false);
   const [showToppingModal, setShowToppingModal] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async () => {
-    const [menuRes, catRes, topRes] = await Promise.all([
-      fetch("/api/menu"),
-      fetch("/api/categories"),
-      fetch("/api/menu/toppings"),
-    ]);
-    setItems(await menuRes.json());
-    const catData = await catRes.json();
-    setCategories(catData);
-    if (catData.length > 0 && !menuCategoryId) setMenuCategoryId(catData[0].id);
-    setToppings(await topRes.json());
+    try {
+      const [menuRes, catRes, topRes] = await Promise.all([
+        fetch("/api/menu"),
+        fetch("/api/categories"),
+        fetch("/api/menu/toppings"),
+      ]);
+      setItems(await menuRes.json());
+      const catData = await catRes.json();
+      setCategories(catData);
+      if (catData.length > 0 && !menuCategoryId) setMenuCategoryId(catData[0].id);
+      setToppings(await topRes.json());
+    } finally {
+      setLoading(false);
+    }
   }, [menuCategoryId]);
 
   useEffect(() => {
@@ -140,6 +145,7 @@ export default function AdminMenuPage() {
   };
 
   const handleDeleteMenu = async (id: string) => {
+    if (!confirm('ยืนยันการลบเมนูนี้?')) return;
     await fetch(`/api/menu?id=${id}`, { method: "DELETE" });
     loadData();
   };
@@ -172,6 +178,15 @@ export default function AdminMenuPage() {
     setShowCategoryModal(false);
     loadData();
   };
+
+  if (loading) return (
+    <div className="flex-1 flex items-center justify-center p-12">
+      <div className="text-center">
+        <div className="w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+        <p className="text-slate-500 text-sm">กำลังโหลดข้อมูล...</p>
+      </div>
+    </div>
+  );
 
   return (
     <div className="p-6 space-y-6">
@@ -210,6 +225,7 @@ export default function AdminMenuPage() {
           </div>
 
           <div className="bg-white rounded-2xl border overflow-hidden">
+            <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b bg-slate-50">
@@ -278,6 +294,7 @@ export default function AdminMenuPage() {
                 })}
               </tbody>
             </table>
+            </div>
           </div>
         </>
       )}
@@ -300,7 +317,7 @@ export default function AdminMenuPage() {
                   <p className="text-amber-600 font-bold">+{formatCurrency(t.price)}</p>
                 </div>
                 <button
-                  onClick={async () => { await fetch(`/api/menu/toppings?id=${t.id}`, { method: "DELETE" }); loadData(); }}
+                  onClick={async () => { if (!confirm('ยืนยันการลบท็อปปิ้งนี้?')) return; await fetch(`/api/menu/toppings?id=${t.id}`, { method: "DELETE" }); loadData(); }}
                   className="text-red-400 hover:text-red-600 text-sm cursor-pointer"
                 >
                   ลบ

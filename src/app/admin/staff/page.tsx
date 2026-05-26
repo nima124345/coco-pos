@@ -83,20 +83,25 @@ export default function AdminStaffPage() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [historyDays, setHistoryDays] = useState(7);
   const [historyStaffId, setHistoryStaffId] = useState<string>("");
+  const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async () => {
-    const [staffRes, attRes, branchRes] = await Promise.all([
-      fetch("/api/staff"),
-      fetch(
-        `/api/staff/attendance?days=${historyDays}&scope=all-branches${
-          historyStaffId ? `&staffId=${historyStaffId}` : ""
-        }`
-      ),
-      fetch("/api/branches"),
-    ]);
-    setStaffList(await staffRes.json());
-    setAttendance(await attRes.json());
-    setBranchOptions(await branchRes.json());
+    try {
+      const [staffRes, attRes, branchRes] = await Promise.all([
+        fetch("/api/staff"),
+        fetch(
+          `/api/staff/attendance?days=${historyDays}&scope=all-branches${
+            historyStaffId ? `&staffId=${historyStaffId}` : ""
+          }`
+        ),
+        fetch("/api/branches"),
+      ]);
+      setStaffList(await staffRes.json());
+      setAttendance(await attRes.json());
+      setBranchOptions(await branchRes.json());
+    } finally {
+      setLoading(false);
+    }
   }, [historyDays, historyStaffId]);
 
   useEffect(() => {
@@ -182,6 +187,15 @@ export default function AdminStaffPage() {
     const offToday = staffList.filter((s) => !s.todayShift).length;
     return { total, working, offToday };
   }, [staffList]);
+
+  if (loading) return (
+    <div className="flex-1 flex items-center justify-center p-12">
+      <div className="text-center">
+        <div className="w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+        <p className="text-slate-500 text-sm">กำลังโหลดข้อมูล...</p>
+      </div>
+    </div>
+  );
 
   return (
     <div className="p-6 lg:p-8 space-y-6 max-w-[1600px] mx-auto">

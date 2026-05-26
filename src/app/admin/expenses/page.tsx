@@ -180,6 +180,7 @@ export default function AdminExpensesPage() {
       </div>
 
       <div className="bg-white rounded-2xl border overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
             <tr className="border-b bg-slate-50">
@@ -249,6 +250,7 @@ export default function AdminExpensesPage() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {showModal && (
