@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { put } from "@vercel/blob";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 
@@ -15,6 +16,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ url: "" });
   }
 
+  // Production: use Vercel Blob
+  if (process.env.BLOB_READ_WRITE_TOKEN) {
+    try {
+      const blob = await put(`menu/${Date.now()}-${file.name}`, file, {
+        access: "public",
+      });
+      return NextResponse.json({ url: blob.url });
+    } catch {
+      return NextResponse.json({ url: "" });
+    }
+  }
+
+  // Local dev: write to filesystem
   try {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
@@ -31,8 +45,4 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json({ url: "" });
   }
-}
-
-export async function GET() {
-  return NextResponse.json({ status: "ok" });
 }
