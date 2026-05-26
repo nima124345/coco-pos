@@ -91,8 +91,10 @@ export default function AdminMenuPage() {
       const formData = new FormData();
       formData.append("file", menuImageFile);
       const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
-      const uploadData = await uploadRes.json();
-      imageUrl = uploadData.url || "";
+      if (uploadRes.ok) {
+        const uploadData = await uploadRes.json();
+        imageUrl = uploadData.url || "";
+      }
       setImageUploading(false);
     }
 
