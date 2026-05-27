@@ -72,6 +72,12 @@ export default function AdminInventoryPage() {
     loadData();
   };
 
+  const handleDelete = async (item: InventoryItem) => {
+    if (!confirm(`ลบ "${item.name}" ออกจากสต็อก?`)) return;
+    await apiFetch(`/api/inventory?id=${item.id}`, { method: "DELETE" });
+    loadData();
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div>
@@ -163,6 +169,13 @@ export default function AdminInventoryPage() {
                       className="w-7 h-7 rounded bg-blue-100 text-blue-600 flex items-center justify-center hover:bg-blue-200 text-xs cursor-pointer"
                     >
                       #
+                    </button>
+                    <button
+                      onClick={() => handleDelete(item)}
+                      className="w-7 h-7 rounded bg-red-100 text-red-600 flex items-center justify-center hover:bg-red-300 cursor-pointer ml-1"
+                      title="ลบวัตถุดิบ"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
                     </button>
                   </div>
                 </td>
