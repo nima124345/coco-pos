@@ -3,7 +3,7 @@
  * Run with DATABASE_URL=libsql://... TURSO_AUTH_TOKEN=... npx tsx prisma/deploy-to-turso.ts
  */
 import { createClient } from "@libsql/client";
-import { PrismaLibSql } from "@prisma/adapter-libsql";
+import { PrismaLibSQL } from "@prisma/adapter-libsql";
 import { PrismaClient } from "@prisma/client";
 import { readFileSync } from "fs";
 import { join } from "path";
@@ -69,7 +69,7 @@ async function main() {
 
   // 2. Seed via Prisma client with libsql adapter
   console.log("==> Seeding production data...");
-  const adapter = new PrismaLibSql({ url: url!, authToken });
+  const adapter = new PrismaLibSQL({ url: url!, authToken });
   const prisma = new PrismaClient({ adapter });
 
   // Branches

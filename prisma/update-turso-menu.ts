@@ -1,4 +1,4 @@
-import { PrismaLibSql } from "@prisma/adapter-libsql";
+import { PrismaLibSQL } from "@prisma/adapter-libsql";
 import { PrismaClient } from "@prisma/client";
 
 const url = "libsql://coco-pos-nima124345.aws-ap-northeast-1.turso.io";
@@ -11,7 +11,7 @@ if (!authToken) {
 
 async function main() {
   console.log("Connecting to Turso production DB...");
-  const adapter = new PrismaLibSql({ url, authToken });
+  const adapter = new PrismaLibSQL({ url, authToken });
   const prisma = new PrismaClient({ adapter });
 
   // 1. Delete existing menu data (FK-safe order)
