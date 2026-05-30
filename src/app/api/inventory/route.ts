@@ -1,23 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getBranchId } from "@/lib/branch";
+import { getContext } from "@/lib/branch";
 
-// Inventory is per-branch only. Booth context falls back to "no branch" and returns empty.
+// Inventory is per-branch OR per-booth-event. Each owner has independent stock.
 export async function GET(req: NextRequest) {
-  const branchId = getBranchId(req);
+  const ctx = getContext(req);
   const { searchParams } = new URL(req.url);
   const scope = searchParams.get("scope");
 
-  if (!branchId && scope !== "all") {
+  if (!ctx && scope !== "all") {
     return NextResponse.json([]);
   }
 
   const where: Record<string, unknown> = { active: true };
-  if (scope !== "all" && branchId) where.branchId = branchId;
+  if (scope !== "all" && ctx) {
+    if (ctx.mode === "BRANCH") where.branchId = ctx.id;
+    else where.boothEventId = ctx.id;
+  }
 
   const items = await prisma.inventoryItem.findMany({
     where,
-    include: { branch: { select: { id: true, name: true } } },
+    include: {
+      branch: { select: { id: true, name: true } },
+      boothEvent: { select: { id: true, name: true } },
+    },
     orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
   });
   return NextResponse.json(items);
@@ -25,18 +31,25 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const branchId = getBranchId(req);
+  const ctx = getContext(req);
 
-  if (!branchId) {
+  if (!ctx) {
     return NextResponse.json(
-      { error: "Inventory available only in branch context" },
+      { error: "Missing context (branch or booth)" },
       { status: 400 }
     );
   }
 
-  const item = await prisma.inventoryItem.create({
-    data: { ...body, branchId },
-  });
+  const data: Record<string, unknown> = { ...body };
+  if (ctx.mode === "BRANCH") {
+    data.branchId = ctx.id;
+    data.boothEventId = null;
+  } else {
+    data.boothEventId = ctx.id;
+    data.branchId = null;
+  }
+
+  const item = await prisma.inventoryItem.create({ data: data as never });
   return NextResponse.json(item);
 }
 

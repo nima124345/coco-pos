@@ -16,6 +16,7 @@ const adminNavItems = [
   { href: "/admin/promotions", label: "โปรโมชั่น", icon: "🏷️" },
   { href: "/admin/inventory", label: "สต็อก", icon: "📦" },
   { href: "/admin/orders", label: "ออเดอร์ทั้งหมด", icon: "📋" },
+  { href: "/admin/customers", label: "ลูกค้า", icon: "🧑‍💼" },
 ];
 
 export default function AdminLayout({

@@ -80,6 +80,8 @@ export async function POST(req: NextRequest) {
       paymentMethod: body.paymentMethod,
       channel: body.channel || "DINE_IN",
       shopeeOrderId: body.shopeeOrderId || "",
+      customerName: (body.customerName || "").trim(),
+      customerPhone: (body.customerPhone || "").trim(),
       branchId: ctx.mode === "BRANCH" ? ctx.id : null,
       boothEventId: ctx.mode === "BOOTH" ? ctx.id : null,
       staffId: body.staffId,

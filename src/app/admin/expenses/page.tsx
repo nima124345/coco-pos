@@ -87,6 +87,27 @@ export default function AdminExpensesPage() {
   };
 
   const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const maxExpense = expenses.reduce((max, e) => (e.amount > max ? e.amount : max), 0);
+  const expenseCount = expenses.length;
+  const uniqueDays = new Set(expenses.map((e) => e.date.slice(0, 10))).size;
+  const avgPerDay = uniqueDays > 0 ? totalExpenses / uniqueDays : 0;
+  const topCategory = (() => {
+    const byCat = new Map<string, { name: string; color: string; total: number }>();
+    for (const e of expenses) {
+      const cur = byCat.get(e.category.id) ?? {
+        name: e.category.name,
+        color: e.category.color,
+        total: 0,
+      };
+      cur.total += e.amount;
+      byCat.set(e.category.id, cur);
+    }
+    let top: { name: string; color: string; total: number } | null = null;
+    for (const c of byCat.values()) {
+      if (!top || c.total > top.total) top = c;
+    }
+    return top;
+  })();
 
   const handleExportCSV = () => {
     const header = "วันที่,หมวดหมู่,รายการ,จำนวนเงิน,หมายเหตุ\n";
@@ -157,100 +178,114 @@ export default function AdminExpensesPage() {
           <Button onClick={handleExportCSV} variant="outline">
             Export CSV
           </Button>
+          <Button
+            onClick={() => setShowModal(true)}
+            className="h-10 px-5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-xl shadow-lg shadow-amber-500/30"
+          >
+            + เพิ่มรายจ่าย
+          </Button>
         </div>
       </div>
 
-      <div className="flex items-center gap-3 flex-wrap">
-        <Card className="flex-1">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <Card>
           <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <p className="text-slate-500">รายจ่ายทั้งหมดเดือนนี้</p>
-              <p className="text-3xl font-bold text-red-600">
-                {formatCurrency(totalExpenses)}
-              </p>
-            </div>
+            <p className="text-xs text-slate-500 mb-1">รวมทั้งเดือน</p>
+            <p className="text-2xl font-bold text-red-600">
+              {formatCurrency(totalExpenses)}
+            </p>
           </CardContent>
         </Card>
-        <Button
-          onClick={() => setShowModal(true)}
-          className="h-14 px-6 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-2xl shadow-lg shadow-amber-500/30 text-base"
-        >
-          + เพิ่มรายจ่าย
-        </Button>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-xs text-slate-500 mb-1">รายการสูงสุด</p>
+            <p className="text-2xl font-bold text-slate-900">
+              {formatCurrency(maxExpense)}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-xs text-slate-500 mb-1">จำนวนรายการ</p>
+            <p className="text-2xl font-bold text-slate-900">
+              {expenseCount} <span className="text-sm font-normal text-slate-400">รายการ</span>
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-xs text-slate-500 mb-1">เฉลี่ย/วันที่มีรายจ่าย</p>
+            <p className="text-2xl font-bold text-slate-900">
+              {formatCurrency(avgPerDay)}
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
-      <div className="bg-white rounded-2xl border overflow-hidden">
-        <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b bg-slate-50">
-              <th className="text-left p-3 text-sm font-medium text-slate-500">
-                วันที่
-              </th>
-              <th className="text-left p-3 text-sm font-medium text-slate-500">
-                หมวดหมู่
-              </th>
-              <th className="text-left p-3 text-sm font-medium text-slate-500">
-                รายการ
-              </th>
-              <th className="text-right p-3 text-sm font-medium text-slate-500">
-                จำนวนเงิน
-              </th>
-              <th className="text-center p-3 text-sm font-medium text-slate-500">
-                จัดการ
-              </th>
-            </tr>
-          </thead>
-          <tbody>
+      {topCategory && (
+        <div className="flex items-center gap-2 text-sm bg-slate-50 rounded-2xl border border-slate-200 px-4 py-3 flex-wrap">
+          <span className="text-slate-500">หมวดที่ใช้จ่ายสูงสุด</span>
+          <span
+            className="px-2 py-0.5 rounded-full text-xs font-medium text-white"
+            style={{ backgroundColor: topCategory.color }}
+          >
+            {topCategory.name}
+          </span>
+          <span className="font-semibold text-slate-900">
+            {formatCurrency(topCategory.total)}
+          </span>
+        </div>
+      )}
+
+      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+        {expenses.length === 0 ? (
+          <div className="p-12 text-center text-slate-400">
+            ยังไม่มีรายจ่ายในเดือนนี้
+          </div>
+        ) : (
+          <ul className="divide-y divide-slate-100">
             {expenses.map((expense) => (
-              <tr key={expense.id} className="border-b hover:bg-slate-50">
-                <td className="p-3 text-sm">
+              <li
+                key={expense.id}
+                className="group grid grid-cols-[5rem_8rem_1fr_auto_2rem] md:grid-cols-[7rem_10rem_1fr_8rem_3rem] items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors"
+              >
+                <span className="text-xs md:text-sm text-slate-500 tabular-nums">
                   {formatDate(expense.date)}
-                </td>
-                <td className="p-3">
-                  <span
-                    className="px-2 py-1 rounded-full text-xs font-medium text-white"
-                    style={{
-                      backgroundColor: expense.category.color,
-                    }}
-                  >
-                    {expense.category.name}
-                  </span>
-                </td>
-                <td className="p-3 text-sm">
-                  {expense.title}
+                </span>
+                <span
+                  className="justify-self-start px-2 py-0.5 rounded-full text-xs font-medium text-white truncate max-w-full"
+                  style={{ backgroundColor: expense.category.color }}
+                >
+                  {expense.category.name}
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-slate-900 truncate">
+                    {expense.title}
+                  </p>
                   {expense.note && (
-                    <p className="text-xs text-slate-400">
+                    <p className="text-xs text-slate-400 truncate">
                       {expense.note}
                     </p>
                   )}
-                </td>
-                <td className="p-3 text-right font-bold text-red-600">
-                  {formatCurrency(expense.amount)}
-                </td>
-                <td className="p-3 text-center">
-                  <button
-                    onClick={() => handleDelete(expense.id)}
-                    className="text-red-400 hover:text-red-600 text-sm cursor-pointer"
-                  >
-                    ลบ
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {expenses.length === 0 && (
-              <tr>
-                <td
-                  colSpan={5}
-                  className="p-8 text-center text-slate-400"
+                </div>
+                <span className="text-right font-bold text-red-600 tabular-nums whitespace-nowrap">
+                  -{formatCurrency(expense.amount)}
+                </span>
+                <button
+                  onClick={() => handleDelete(expense.id)}
+                  aria-label="ลบรายการ"
+                  className="justify-self-end w-8 h-8 rounded-lg text-slate-300 hover:text-red-600 hover:bg-red-50 cursor-pointer flex items-center justify-center opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
                 >
-                  ยังไม่มีรายจ่ายในเดือนนี้
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-        </div>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 6h18" />
+                    <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                  </svg>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       {showModal && (

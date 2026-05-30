@@ -192,85 +192,144 @@ export default function AdminMenuPage() {
     <div className="p-6 space-y-6">
       <h1 className="text-2xl font-bold">จัดการเมนูและท็อปปิ้ง</h1>
 
-      {/* Tab Navigation */}
-      <div className="flex gap-1 bg-white rounded-xl p-1 border w-fit">
-        {[
-          { value: "menu" as const, label: "เมนู" },
-          { value: "toppings" as const, label: "ท็อปปิ้ง" },
-          { value: "categories" as const, label: "หมวดหมู่" },
-        ].map((t) => (
-          <button
-            key={t.value}
-            onClick={() => setTab(t.value)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${
-              tab === t.value
-                ? "bg-amber-500 text-white"
-                : "text-slate-600 hover:bg-slate-50"
-            }`}
+      {/* Tab Navigation + Add Button */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex gap-1 bg-white rounded-xl p-1 border w-fit">
+          {[
+            { value: "menu" as const, label: "เมนู" },
+            { value: "toppings" as const, label: "ท็อปปิ้ง" },
+            { value: "categories" as const, label: "หมวดหมู่" },
+          ].map((t) => (
+            <button
+              key={t.value}
+              onClick={() => setTab(t.value)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+                tab === t.value
+                  ? "bg-amber-500 text-white"
+                  : "text-slate-600 hover:bg-slate-50"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+        {tab === "menu" && (
+          <Button
+            onClick={() => { setEditingMenu(null); setMenuName(""); setMenuPrice(""); setMenuShopeePrice(""); setShopeePriceTouched(false); setMenuImage(""); setMenuImageFile(null); setShowMenuModal(true); }}
+            className="h-12 px-6 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-2xl shadow-lg shadow-amber-500/30 text-base"
           >
-            {t.label}
-          </button>
-        ))}
+            + เพิ่มเมนูใหม่
+          </Button>
+        )}
+        {tab === "toppings" && (
+          <Button
+            onClick={() => { setToppingName(""); setToppingPrice(""); setShowToppingModal(true); }}
+            className="h-12 px-6 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-2xl shadow-lg shadow-amber-500/30 text-base"
+          >
+            + เพิ่มท็อปปิ้ง
+          </Button>
+        )}
+        {tab === "categories" && (
+          <Button
+            onClick={() => { setCatName(""); setCatEmoji(""); setShowCategoryModal(true); }}
+            className="h-12 px-6 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-2xl shadow-lg shadow-amber-500/30 text-base"
+          >
+            + เพิ่มหมวดหมู่
+          </Button>
+        )}
       </div>
 
-      {tab === "menu" && (
+      {tab === "menu" && (() => {
+        const totalItems = items.length;
+        const activeItems = items.filter((i) => i.active).length;
+        const avgStorePrice = totalItems > 0 ? items.reduce((s, i) => s + i.price, 0) / totalItems : 0;
+        const avgShopeePrice = totalItems > 0
+          ? items.reduce((s, i) => s + (i.shopeePrice > 0 ? i.shopeePrice : i.price), 0) / totalItems
+          : 0;
+        return (
         <>
-          <div className="flex justify-end">
-            <Button
-              onClick={() => { setEditingMenu(null); setMenuName(""); setMenuPrice(""); setMenuShopeePrice(""); setShopeePriceTouched(false); setMenuImage(""); setMenuImageFile(null); setShowMenuModal(true); }}
-              className="h-12 px-6 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-2xl shadow-lg shadow-amber-500/30 text-base"
-            >
-              + เพิ่มเมนูใหม่
-            </Button>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <Card>
+              <CardContent className="pt-6">
+                <p className="text-xs text-slate-500 mb-1">เมนูทั้งหมด</p>
+                <p className="text-2xl font-bold text-slate-900">
+                  {totalItems} <span className="text-sm font-normal text-slate-400">รายการ</span>
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <p className="text-xs text-slate-500 mb-1">เมนูที่ขายอยู่</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {activeItems} <span className="text-sm font-normal text-slate-400">/ {totalItems}</span>
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <p className="text-xs text-slate-500 mb-1">🏪 ราคาเฉลี่ยหน้าร้าน</p>
+                <p className="text-2xl font-bold text-amber-600">
+                  {formatCurrency(avgStorePrice)}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <p className="text-xs text-slate-500 mb-1">🛍️ ราคาเฉลี่ย Shopee</p>
+                <p className="text-2xl font-bold text-orange-600">
+                  {formatCurrency(avgShopeePrice)}
+                </p>
+              </CardContent>
+            </Card>
           </div>
 
-          <div className="bg-white rounded-2xl border overflow-hidden">
-            <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b bg-slate-50">
-                  <th className="text-left p-3 text-sm font-medium text-slate-500">เมนู</th>
-                  <th className="text-left p-3 text-sm font-medium text-slate-500">หมวดหมู่</th>
-                  <th className="text-right p-3 text-sm font-medium text-slate-500">🏪 หน้าร้าน</th>
-                  <th className="text-right p-3 text-sm font-medium text-slate-500">🛍️ Shopee</th>
-                  <th className="text-center p-3 text-sm font-medium text-slate-500">สถานะ</th>
-                  <th className="text-center p-3 text-sm font-medium text-slate-500">จัดการ</th>
-                </tr>
-              </thead>
-              <tbody>
+          <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+            {items.length === 0 ? (
+              <div className="p-12 text-center text-slate-400">
+                ยังไม่มีเมนู
+              </div>
+            ) : (
+              <ul className="divide-y divide-slate-100">
                 {items.map((item) => {
                   const effectiveShopee = item.shopeePrice > 0 ? item.shopeePrice : item.price;
                   const sameAsStore = effectiveShopee === item.price;
                   return (
-                    <tr key={item.id} className="border-b hover:bg-slate-50">
-                      <td className="p-3 font-medium">
-                        <div className="flex items-center gap-3">
-                          {item.image ? (
-                            <img src={item.image} alt={item.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
-                          ) : (
-                            <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
-                              <span className="text-lg">{item.category?.emoji || "🍹"}</span>
-                            </div>
-                          )}
-                          <span>{item.name}</span>
-                        </div>
-                      </td>
-                      <td className="p-3 text-sm text-slate-500">{item.category?.emoji} {item.category?.name}</td>
-                      <td className="p-3 text-right font-bold text-amber-600">{formatCurrency(item.price)}</td>
-                      <td className="p-3 text-right">
-                        <span className={`font-bold ${sameAsStore ? "text-slate-400" : "text-orange-600"}`}>{formatCurrency(effectiveShopee)}</span>
-                        {sameAsStore ? (
-                          <span className="ml-1 text-[10px] text-slate-400">(เท่ากัน)</span>
+                    <li
+                      key={item.id}
+                      className="group grid grid-cols-[1fr_auto_auto] md:grid-cols-[1.5fr_9rem_6rem_8rem_5rem_5rem] items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        {item.image ? (
+                          <img src={item.image} alt={item.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
                         ) : (
-                          <span className={`ml-1 text-[10px] ${effectiveShopee > item.price ? "text-orange-500" : "text-red-500"}`}>
+                          <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
+                            <span className="text-lg">{item.category?.emoji || "🍹"}</span>
+                          </div>
+                        )}
+                        <span className="font-medium truncate">{item.name}</span>
+                      </div>
+                      <span className="hidden md:block text-sm text-slate-500 truncate">
+                        {item.category?.emoji} {item.category?.name}
+                      </span>
+                      <span className="hidden md:block text-right font-bold text-amber-600 tabular-nums">
+                        {formatCurrency(item.price)}
+                      </span>
+                      <div className="hidden md:flex flex-col items-end">
+                        <span className={`font-bold tabular-nums ${sameAsStore ? "text-slate-400" : "text-orange-600"}`}>
+                          {formatCurrency(effectiveShopee)}
+                        </span>
+                        {sameAsStore ? (
+                          <span className="text-[10px] text-slate-400">(เท่ากัน)</span>
+                        ) : (
+                          <span className={`text-[10px] ${effectiveShopee > item.price ? "text-orange-500" : "text-red-500"}`}>
                             {effectiveShopee > item.price ? "+" : ""}{(effectiveShopee - item.price).toFixed(0)}฿
                           </span>
                         )}
-                      </td>
-                      <td className="p-3 text-center">
+                      </div>
+                      <div className="hidden md:flex justify-center">
                         <Badge variant={item.active ? "success" : "destructive"}>{item.active ? "ขายอยู่" : "ปิด"}</Badge>
-                      </td>
-                      <td className="p-3 text-center space-x-2">
+                      </div>
+                      <div className="flex items-center gap-1 justify-end opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                         <button
                           onClick={() => {
                             setEditingMenu(item);
@@ -283,32 +342,37 @@ export default function AdminMenuPage() {
                             setMenuImageFile(null);
                             setShowMenuModal(true);
                           }}
-                          className="text-blue-500 hover:text-blue-700 text-sm cursor-pointer"
+                          aria-label="แก้ไขเมนู"
+                          className="w-8 h-8 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 cursor-pointer flex items-center justify-center"
                         >
-                          แก้ไข
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                          </svg>
                         </button>
-                        <button onClick={() => handleDeleteMenu(item.id)} className="text-red-400 hover:text-red-600 text-sm cursor-pointer">ลบ</button>
-                      </td>
-                    </tr>
+                        <button
+                          onClick={() => handleDeleteMenu(item.id)}
+                          aria-label="ลบเมนู"
+                          className="w-8 h-8 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 cursor-pointer flex items-center justify-center"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M3 6h18" />
+                            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                          </svg>
+                        </button>
+                      </div>
+                    </li>
                   );
                 })}
-              </tbody>
-            </table>
-            </div>
+              </ul>
+            )}
           </div>
         </>
-      )}
+        );
+      })()}
 
       {tab === "toppings" && (
         <>
-          <div className="flex justify-end">
-            <Button
-              onClick={() => { setToppingName(""); setToppingPrice(""); setShowToppingModal(true); }}
-              className="h-12 px-6 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-2xl shadow-lg shadow-amber-500/30 text-base"
-            >
-              + เพิ่มท็อปปิ้ง
-            </Button>
-          </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             {toppings.map((t) => (
               <Card key={t.id} className="p-4 flex items-center justify-between">
@@ -330,14 +394,6 @@ export default function AdminMenuPage() {
 
       {tab === "categories" && (
         <>
-          <div className="flex justify-end">
-            <Button
-              onClick={() => { setCatName(""); setCatEmoji(""); setShowCategoryModal(true); }}
-              className="h-12 px-6 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-2xl shadow-lg shadow-amber-500/30 text-base"
-            >
-              + เพิ่มหมวดหมู่
-            </Button>
-          </div>
           <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
             {categories.map((cat) => (
               <Card key={cat.id} className="p-4 text-center">

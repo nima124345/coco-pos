@@ -43,9 +43,10 @@ model BoothEvent {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  orders   Order[]
-  shifts   Shift[]
-  expenses Expense[]
+  orders         Order[]
+  shifts         Shift[]
+  expenses       Expense[]
+  inventoryItems InventoryItem[]
 }
 
 // ==================== Users & Auth ====================
@@ -144,6 +145,8 @@ model Order {
   voidReason    String   @default("")
   channel       String   @default("DINE_IN")
   shopeeOrderId String   @default("")
+  customerName  String   @default("")
+  customerPhone String   @default("")
   branchId      String?
   boothEventId  String?
   staffId       String
@@ -261,21 +264,25 @@ model Promotion {
   @@index([branchId])
 }
 
-// ==================== Inventory (per branch only) ====================
+// ==================== Inventory (per branch OR per booth event) ====================
+// Exactly one of branchId / boothEventId must be set (enforced at API level).
 model InventoryItem {
-  id        String   @id @default(cuid())
-  branchId  String
-  name      String
-  unit      String   @default("ชิ้น")
-  quantity  Float    @default(0)
-  minStock  Float    @default(0)
-  costPrice Float    @default(0)
-  sortOrder Int      @default(0)
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String   @id @default(cuid())
+  branchId      String?
+  boothEventId  String?
+  name          String
+  unit          String   @default("ชิ้น")
+  quantity      Float    @default(0)
+  minStock      Float    @default(0)
+  costPrice     Float    @default(0)
+  sortOrder     Int      @default(0)
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  branch Branch @relation(fields: [branchId], references: [id])
+  branch     Branch?     @relation(fields: [branchId], references: [id])
+  boothEvent BoothEvent? @relation(fields: [boothEventId], references: [id])
 
   @@index([branchId])
+  @@index([boothEventId])
 }

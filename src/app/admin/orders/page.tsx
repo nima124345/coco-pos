@@ -30,6 +30,8 @@ interface Order {
   voidReason: string;
   channel: string;
   shopeeOrderId: string;
+  customerName: string;
+  customerPhone: string;
   createdAt: string;
   items: OrderItem[];
   staff: { name: string };
@@ -97,7 +99,10 @@ export default function AdminOrdersPage() {
   const completedOrders = filteredOrders.filter(
     (o) => o.status === "COMPLETED"
   );
+  const voidedOrders = filteredOrders.filter((o) => o.status === "VOIDED");
   const totalSales = completedOrders.reduce((sum, o) => sum + o.netTotal, 0);
+  const avgOrder =
+    completedOrders.length > 0 ? totalSales / completedOrders.length : 0;
 
   const channelCounts = orders.reduce<Record<string, number>>((acc, o) => {
     acc[o.channel] = (acc[o.channel] || 0) + 1;
@@ -188,6 +193,43 @@ export default function AdminOrdersPage() {
         </div>
       </div>
 
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <Card>
+          <div className="p-6">
+            <p className="text-xs text-slate-500 mb-1">ยอดขายรวม</p>
+            <p className="text-2xl font-bold text-green-600">
+              {formatCurrency(totalSales)}
+            </p>
+          </div>
+        </Card>
+        <Card>
+          <div className="p-6">
+            <p className="text-xs text-slate-500 mb-1">ออเดอร์สำเร็จ</p>
+            <p className="text-2xl font-bold text-slate-900">
+              {completedOrders.length}
+              <span className="text-sm font-normal text-slate-400"> ออเดอร์</span>
+            </p>
+          </div>
+        </Card>
+        <Card>
+          <div className="p-6">
+            <p className="text-xs text-slate-500 mb-1">เฉลี่ย/ออเดอร์</p>
+            <p className="text-2xl font-bold text-amber-600">
+              {formatCurrency(avgOrder)}
+            </p>
+          </div>
+        </Card>
+        <Card>
+          <div className="p-6">
+            <p className="text-xs text-slate-500 mb-1">ยกเลิก</p>
+            <p className="text-2xl font-bold text-red-600">
+              {voidedOrders.length}
+              <span className="text-sm font-normal text-slate-400"> ออเดอร์</span>
+            </p>
+          </div>
+        </Card>
+      </div>
+
       <div className="flex flex-wrap gap-2">
         {CHANNEL_FILTERS.map((f) => {
           const count =
@@ -221,76 +263,74 @@ export default function AdminOrdersPage() {
 
       <div className="flex gap-6">
         {/* Order List */}
-        <div className="flex-1 space-y-2 max-h-[calc(100vh-200px)] overflow-y-auto">
-          {filteredOrders.map((order) => (
-            <Card
-              key={order.id}
-              className={`p-4 cursor-pointer transition-all hover:shadow-md ${
-                selectedOrder?.id === order.id ? "ring-2 ring-amber-500" : ""
-              } ${order.status === "VOIDED" ? "opacity-60" : ""}`}
-              onClick={() => setSelectedOrder(order)}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold ${
-                      order.channel === "SHOPEE"
-                        ? "bg-orange-100 text-orange-600"
-                        : "bg-amber-100 text-amber-600"
-                    }`}
-                  >
-                    {order.channel === "SHOPEE" ? "🛍️" : `#${order.orderNumber}`}
-                  </div>
-                  <div>
-                    <p className="font-medium text-sm">
-                      {order.channel === "SHOPEE" && (
-                        <span className="text-orange-600 font-bold mr-1">
-                          #{order.orderNumber}
-                        </span>
-                      )}
-                      {order.items.length} รายการ | {order.staff.name}
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      {formatDate(order.createdAt)}
-                    </p>
-                    {order.channel === "SHOPEE" && order.shopeeOrderId && (
-                      <p className="text-xs text-orange-700 font-mono mt-0.5">
-                        🛍️ {order.shopeeOrderId}
-                      </p>
-                    )}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="font-bold">{formatCurrency(order.netTotal)}</p>
-                  <div className="flex gap-1 mt-1 flex-wrap justify-end">
-                    <Badge
-                      variant={
-                        order.status === "COMPLETED" ? "success" : "destructive"
-                      }
-                    >
-                      {order.status === "COMPLETED" ? "สำเร็จ" : "ยกเลิก"}
-                    </Badge>
-                    <Badge
-                      variant="outline"
-                      className={channelLabel(order.channel).cls}
-                    >
-                      {channelLabel(order.channel).emoji}{" "}
-                      {channelLabel(order.channel).label}
-                    </Badge>
-                    <Badge variant="outline">
-                      {order.paymentMethod === "CASH" ? "เงินสด" : "QR"}
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          ))}
-
-          {filteredOrders.length === 0 && (
+        <div className="flex-1 max-h-[calc(100vh-200px)] overflow-y-auto bg-white rounded-2xl border border-slate-200">
+          {filteredOrders.length === 0 ? (
             <div className="text-center py-16 text-slate-400">
               <div className="text-4xl mb-3">📋</div>
               <p>ไม่มีออเดอร์ในวันที่เลือก</p>
             </div>
+          ) : (
+            <ul className="divide-y divide-slate-100">
+              {filteredOrders.map((order) => {
+                const ch = channelLabel(order.channel);
+                const isSelected = selectedOrder?.id === order.id;
+                const isVoided = order.status === "VOIDED";
+                return (
+                  <li
+                    key={order.id}
+                    onClick={() => setSelectedOrder(order)}
+                    className={`grid grid-cols-[3.5rem_1fr_auto] md:grid-cols-[3.5rem_5rem_1fr_8rem_5rem_6rem] items-center gap-3 px-4 py-3 cursor-pointer transition-colors ${
+                      isSelected
+                        ? "bg-amber-50 border-l-4 border-amber-500"
+                        : "hover:bg-slate-50 border-l-4 border-transparent"
+                    } ${isVoided ? "opacity-60" : ""}`}
+                  >
+                    <span
+                      className={`font-mono font-bold text-sm tabular-nums ${
+                        order.channel === "SHOPEE"
+                          ? "text-orange-600"
+                          : "text-amber-600"
+                      }`}
+                    >
+                      #{order.orderNumber}
+                    </span>
+                    <span className="hidden md:block text-xs text-slate-500 tabular-nums">
+                      {new Date(order.createdAt).toLocaleTimeString("th-TH", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">
+                        {order.items.length} รายการ
+                        <span className="text-slate-400 font-normal"> · </span>
+                        <span className="text-slate-500 font-normal">{order.staff.name}</span>
+                      </p>
+                      {order.channel === "SHOPEE" && order.shopeeOrderId && (
+                        <p className="text-[11px] text-orange-700 font-mono truncate">
+                          🛍️ {order.shopeeOrderId}
+                        </p>
+                      )}
+                    </div>
+                    <div className="hidden md:flex justify-center">
+                      <Badge variant="outline" className={ch.cls}>
+                        {ch.emoji} {ch.label}
+                      </Badge>
+                    </div>
+                    <div className="hidden md:flex justify-center">
+                      <Badge
+                        variant={order.status === "COMPLETED" ? "success" : "destructive"}
+                      >
+                        {order.status === "COMPLETED" ? "สำเร็จ" : "ยกเลิก"}
+                      </Badge>
+                    </div>
+                    <p className="text-right font-bold tabular-nums whitespace-nowrap">
+                      {formatCurrency(order.netTotal)}
+                    </p>
+                  </li>
+                );
+              })}
+            </ul>
           )}
         </div>
 
@@ -325,6 +365,30 @@ export default function AdminOrdersPage() {
                   </p>
                 </div>
               )}
+
+            {(selectedOrder.customerName || selectedOrder.customerPhone) && (
+              <div className="mb-3 bg-blue-50 border border-blue-200 rounded-lg p-2.5">
+                <p className="text-[11px] font-semibold text-blue-700 uppercase tracking-wider mb-1">
+                  ลูกค้า
+                </p>
+                {selectedOrder.customerName && (
+                  <p className="text-sm text-slate-900">
+                    👤 {selectedOrder.customerName}
+                  </p>
+                )}
+                {selectedOrder.customerPhone && (
+                  <p className="text-sm text-slate-900 font-mono">
+                    📞{" "}
+                    <a
+                      href={`tel:${selectedOrder.customerPhone}`}
+                      className="hover:underline"
+                    >
+                      {selectedOrder.customerPhone}
+                    </a>
+                  </p>
+                )}
+              </div>
+            )}
 
             <div className="space-y-2 mb-4">
               {selectedOrder.items.map((item) => (

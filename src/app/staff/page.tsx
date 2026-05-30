@@ -56,6 +56,8 @@ export default function StaffPOS() {
     "DINE_IN"
   );
   const [shopeeOrderId, setShopeeOrderId] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
   const [cashReceived, setCashReceived] = useState("");
   const [orderSuccess, setOrderSuccess] = useState<number | null>(null);
   const [cartOpenMobile, setCartOpenMobile] = useState(false);
@@ -174,6 +176,8 @@ export default function StaffPOS() {
       paymentMethod,
       channel,
       shopeeOrderId: channel === "SHOPEE" ? shopeeOrderId.trim() : "",
+      customerName: customerName.trim(),
+      customerPhone: customerPhone.trim(),
       staffId: user.id,
       shiftId: shiftId || undefined,
       items: cartEffective.map((item) => ({
@@ -204,6 +208,8 @@ export default function StaffPOS() {
       setShowPayment(false);
       setCashReceived("");
       setShopeeOrderId("");
+      setCustomerName("");
+      setCustomerPhone("");
       setChannel("DINE_IN");
       setTimeout(() => {
         setOrderSuccess(null);
@@ -594,6 +600,26 @@ export default function StaffPOS() {
                     />
                   </div>
                 )}
+
+                <div>
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                    ข้อมูลลูกค้า <span className="text-slate-400 normal-case font-normal">(ไม่บังคับ)</span>
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input
+                      placeholder="ชื่อลูกค้า"
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                    />
+                    <Input
+                      type="tel"
+                      inputMode="tel"
+                      placeholder="เบอร์โทร"
+                      value={customerPhone}
+                      onChange={(e) => setCustomerPhone(e.target.value)}
+                    />
+                  </div>
+                </div>
 
                 <div>
                   <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
