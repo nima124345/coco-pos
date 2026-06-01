@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import bcrypt from "bcryptjs";
+import { requireAdmin } from "@/lib/session";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const auth = await requireAdmin(req);
+  if (auth instanceof NextResponse) return auth;
+
   const users = await prisma.user.findMany({
     select: {
       id: true,
@@ -74,6 +78,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await requireAdmin(req);
+  if (auth instanceof NextResponse) return auth;
+
   const body = await req.json();
   const hashedPassword = await bcrypt.hash(body.password, 10);
 
@@ -117,6 +124,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
+  const auth = await requireAdmin(req);
+  if (auth instanceof NextResponse) return auth;
+
   const body = await req.json();
   const { id, password, branchIds, defaultBranchId, ...data } = body;
 

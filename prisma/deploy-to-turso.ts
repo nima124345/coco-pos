@@ -40,7 +40,7 @@ async function main() {
   for (const t of tablesToDrop) {
     try {
       await raw.execute(`DROP TABLE IF EXISTS "${t}"`);
-    } catch (e) {
+    } catch {
       /* ignore */
     }
   }
@@ -60,7 +60,7 @@ async function main() {
   for (const stmt of statements) {
     try {
       await raw.execute(stmt);
-    } catch (e: any) {
+    } catch (e) {
       console.error(`Failed: ${stmt.slice(0, 80)}...`);
       throw e;
     }

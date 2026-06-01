@@ -391,37 +391,13 @@ export default function LoginPage() {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">สิทธิ์การใช้งาน</label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setRegRole("ADMIN")}
-                      className={cn(
-                        "p-3.5 rounded-2xl border-2 text-left cursor-pointer transition-all",
-                        regRole === "ADMIN"
-                          ? "border-amber-400 bg-amber-50 shadow-md shadow-amber-500/10"
-                          : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
-                      )}
-                    >
-                      <div className="text-lg mb-1">👑</div>
-                      <div className="text-sm font-bold text-slate-900">Admin</div>
-                      <div className="text-[11px] text-slate-500">จัดการระบบทั้งหมด</div>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setRegRole("STAFF")}
-                      className={cn(
-                        "p-3.5 rounded-2xl border-2 text-left cursor-pointer transition-all",
-                        regRole === "STAFF"
-                          ? "border-green-400 bg-green-50 shadow-md shadow-green-500/10"
-                          : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
-                      )}
-                    >
-                      <div className="text-lg mb-1">🧑‍💼</div>
-                      <div className="text-sm font-bold text-slate-900">Staff</div>
-                      <div className="text-[11px] text-slate-500">พนักงานขายหน้าร้าน</div>
-                    </button>
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3.5 flex items-center gap-3">
+                  <div className="text-lg">🧑‍💼</div>
+                  <div>
+                    <div className="text-sm font-bold text-slate-900">บัญชีพนักงาน (Staff)</div>
+                    <div className="text-[11px] text-slate-500">
+                      สิทธิ์แอดมินต้องให้แอดมินที่มีอยู่เป็นผู้เพิ่มให้
+                    </div>
                   </div>
                 </div>
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import bcrypt from "bcryptjs";
+import { createSessionToken, setSessionCookie, Role } from "@/lib/session";
 
 export async function POST(req: NextRequest) {
   try {
@@ -71,7 +72,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  return NextResponse.json({
+  const res = NextResponse.json({
     id: user.id,
     name: user.name,
     username: user.username,
@@ -79,6 +80,13 @@ export async function POST(req: NextRequest) {
     branches,
     boothEvents,
   });
+
+  const token = await createSessionToken({
+    uid: user.id,
+    role: user.role as Role,
+  });
+  setSessionCookie(res, token);
+  return res;
   } catch (e: unknown) {
     const err = e as Error;
     console.error("Login error:", err.message, "TURSO_DATABASE_URL:", process.env.TURSO_DATABASE_URL ? "SET" : "NOT SET", "TURSO_AUTH_TOKEN:", process.env.TURSO_AUTH_TOKEN ? "SET" : "NOT SET");

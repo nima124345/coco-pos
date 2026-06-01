@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import bcrypt from "bcryptjs";
+import { getSession } from "@/lib/session";
 
 export async function POST(req: NextRequest) {
   try {
     const { name, username, password, role, branchIds } = await req.json();
-    const validRole = role === "ADMIN" ? "ADMIN" : "STAFF";
+
+    // Only an authenticated admin may create another admin. Public
+    // self-registration is always demoted to STAFF.
+    const session = await getSession(req);
+    const validRole =
+      role === "ADMIN" && session?.role === "ADMIN" ? "ADMIN" : "STAFF";
 
     if (!name || !username || !password) {
       return NextResponse.json(

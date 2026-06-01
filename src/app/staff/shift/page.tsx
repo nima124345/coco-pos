@@ -32,7 +32,6 @@ export default function StaffShiftPage() {
   const [currentShift, setCurrentShift] = useState<Shift | null>(null);
 
   const user = useAuthStore((s) => s.user);
-  const shiftId = useAuthStore((s) => s.shiftId);
   const setShiftId = useAuthStore((s) => s.setShiftId);
 
   const loadShifts = useCallback(async () => {

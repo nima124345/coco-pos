@@ -64,7 +64,9 @@ export const useAuthStore = create<AuthState>()(
           currentBranchId: null,
           shiftId: null,
         }),
-      logout: () =>
+      logout: () => {
+        // Clear the server-side session cookie (fire-and-forget).
+        fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
         set({
           user: null,
           shiftId: null,
@@ -72,7 +74,8 @@ export const useAuthStore = create<AuthState>()(
           availableBoothEvents: [],
           currentBranchId: null,
           currentBoothEventId: null,
-        }),
+        });
+      },
     }),
     {
       name: "coco-auth",

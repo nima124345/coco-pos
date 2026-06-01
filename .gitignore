@@ -48,6 +48,11 @@ next-env.d.ts
 prisma/*.db
 prisma/*.db-journal
 
+# libSQL / SQLite local replica artifacts (do not commit)
+/auth
+/auth-wal
+/auth-shm
+
 # screenshots / scratch images
 สกรีนช็อต*.png
 **/สกรีนช็อต*.png
