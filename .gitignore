@@ -52,6 +52,9 @@ prisma/*.db-journal
 /auth
 /auth-wal
 /auth-shm
+/db
+/db-wal
+/db-shm
 
 # screenshots / scratch images
 สกรีนช็อต*.png

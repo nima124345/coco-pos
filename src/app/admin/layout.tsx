@@ -10,6 +10,7 @@ import BranchSwitcher from "@/components/BranchSwitcher";
 
 const adminNavItems = [
   { href: "/admin", label: "แดชบอร์ด", icon: "📊" },
+  { href: "/admin/income", label: "รายรับ", icon: "💰" },
   { href: "/admin/expenses", label: "รายจ่าย", icon: "💸" },
   { href: "/admin/menu", label: "จัดการเมนู", icon: "🍹" },
   { href: "/admin/staff", label: "พนักงาน", icon: "👥" },

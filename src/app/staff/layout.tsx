@@ -12,6 +12,7 @@ const baseNavItems = [
   { href: "/staff", label: "สั่งซื้อ", icon: "🛒" },
   { href: "/staff/orders", label: "ประวัติ", icon: "📋" },
   { href: "/staff/shift", label: "กะการทำงาน", icon: "⏰" },
+  { href: "/staff/expenses", label: "บันทึกรายจ่าย", icon: "💸" },
 ];
 
 const boothNavItem = { href: "/staff/booth-summary", label: "สรุปบูธ", icon: "🎪" };

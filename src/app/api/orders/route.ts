@@ -7,6 +7,8 @@ export async function GET(req: NextRequest) {
   const staffId = searchParams.get("staffId");
   const shiftId = searchParams.get("shiftId");
   const date = searchParams.get("date");
+  const month = searchParams.get("month"); // "YYYY-MM"
+  const status = searchParams.get("status"); // e.g. "COMPLETED" | "VOIDED"
   const limit = parseInt(searchParams.get("limit") || "50");
   const scope = searchParams.get("scope"); // "all" | "all-branches" | "all-booths" | null
   const ctx = getContext(req);
@@ -21,11 +23,17 @@ export async function GET(req: NextRequest) {
   }
   if (staffId) where.staffId = staffId;
   if (shiftId) where.shiftId = shiftId;
+  if (status) where.status = status;
   if (date) {
     const start = new Date(date);
     start.setHours(0, 0, 0, 0);
     const end = new Date(date);
     end.setHours(23, 59, 59, 999);
+    where.createdAt = { gte: start, lte: end };
+  } else if (month) {
+    const [year, m] = month.split("-").map(Number);
+    const start = new Date(year, m - 1, 1, 0, 0, 0, 0);
+    const end = new Date(year, m, 0, 23, 59, 59, 999);
     where.createdAt = { gte: start, lte: end };
   }
 

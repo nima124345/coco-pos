@@ -74,6 +74,21 @@ export default function AdminInventoryPage() {
     loadData();
   };
 
+  const handleUpdatePrice = async (item: InventoryItem) => {
+    const input = prompt(
+      `ราคาต้นทุนต่อ ${item.unit} ของ "${item.name}" (บาท):`,
+      String(item.costPrice)
+    );
+    if (input === null) return;
+    const price = parseFloat(input);
+    if (isNaN(price) || price < 0) return;
+    await apiFetch("/api/inventory", {
+      method: "PUT",
+      body: JSON.stringify({ id: item.id, costPrice: price }),
+    });
+    loadData();
+  };
+
   const handleDelete = async (item: InventoryItem) => {
     if (!confirm(`ลบ "${item.name}" ออกจากสต็อก?`)) return;
     await apiFetch(`/api/inventory?id=${item.id}`, { method: "DELETE" });
@@ -169,6 +184,13 @@ export default function AdminInventoryPage() {
                     <p className="font-medium truncate">{item.name}</p>
                     <p className="lg:hidden text-xs text-slate-500 mt-0.5">
                       คงเหลือ <span className="font-semibold text-slate-700">{item.quantity} {item.unit}</span> · ขั้นต่ำ {item.minStock}
+                      {" · "}
+                      <button
+                        onClick={() => handleUpdatePrice(item)}
+                        className="text-blue-600 font-medium hover:underline cursor-pointer"
+                      >
+                        {formatCurrency(item.costPrice)}/{item.unit} ✎
+                      </button>
                     </p>
                   </div>
                   <span className="hidden lg:block text-center font-bold tabular-nums">
@@ -177,9 +199,16 @@ export default function AdminInventoryPage() {
                   <span className="hidden lg:block text-center text-sm text-slate-500 tabular-nums">
                     {item.minStock} <span className="text-xs text-slate-400">{item.unit}</span>
                   </span>
-                  <span className="hidden lg:block text-right text-sm tabular-nums">
-                    {formatCurrency(item.costPrice)}<span className="text-xs text-slate-400">/{item.unit}</span>
-                  </span>
+                  <button
+                    onClick={() => handleUpdatePrice(item)}
+                    title="แก้ไขราคาต้นทุน"
+                    className="hidden lg:flex items-center justify-end gap-1 text-right text-sm tabular-nums text-slate-700 hover:text-blue-600 cursor-pointer group/price"
+                  >
+                    <span>
+                      {formatCurrency(item.costPrice)}<span className="text-xs text-slate-400">/{item.unit}</span>
+                    </span>
+                    <span className="text-slate-300 group-hover/price:text-blue-500">✎</span>
+                  </button>
                   <div className="hidden lg:flex justify-center">
                     <Badge variant={status.variant}>{status.label}</Badge>
                   </div>

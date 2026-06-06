@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import Link from "next/link";
 import { useAuthStore } from "@/store/auth";
 import { apiFetch } from "@/lib/api";
 import { Card } from "@/components/ui/card";
@@ -23,6 +24,8 @@ interface DashboardData {
   totalOrders: number;
   totalExpenses: number;
   netProfit: number;
+  stockValue: number;
+  stockItemCount: number;
   cashSales: number;
   qrSales: number;
   dineInSales: number;
@@ -263,6 +266,41 @@ export default function AdminDashboard() {
             data.netProfit >= 0 ? "text-emerald-600" : "text-red-600"
           }
         />
+      </section>
+
+      <section>
+        <Card className="relative overflow-hidden p-6">
+          <div className="absolute -top-12 -right-12 w-40 h-40 rounded-full bg-gradient-to-br from-teal-400 to-cyan-600 opacity-10 blur-2xl" />
+          <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-400 to-cyan-600 flex items-center justify-center text-2xl shadow-lg shadow-cyan-500/20 shrink-0">
+                📦
+              </div>
+              <div>
+                <p className="text-sm text-slate-500 font-medium">
+                  มูลค่าสต็อกคงเหลือ
+                  <span className="ml-1.5 text-xs text-slate-400">(ณ ปัจจุบัน)</span>
+                </p>
+                <p className="text-3xl font-bold tracking-tight text-slate-900">
+                  {formatCurrency(data.stockValue)}
+                </p>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  ต้นทุนวัตถุดิบคงคลัง · {data.stockItemCount.toLocaleString()} รายการ
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/admin/inventory"
+              className="self-start sm:self-auto inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium text-cyan-700 bg-cyan-50 hover:bg-cyan-100 border border-cyan-100 transition-colors"
+            >
+              จัดการสต็อก
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M5 12h14" />
+                <path d="m12 5 7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
+        </Card>
       </section>
 
       {(data.salesByBranch.length > 1 || data.salesByBooth.length > 0) && (

@@ -80,6 +80,17 @@ export async function GET(req: NextRequest) {
   });
   const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
 
+  // Current stock value (point-in-time, not period-based) for the same scope
+  const inventoryItems = await prisma.inventoryItem.findMany({
+    where: { active: true, ...ctxWhere },
+    select: { quantity: true, costPrice: true },
+  });
+  const stockValue = inventoryItems.reduce(
+    (sum, i) => sum + i.quantity * i.costPrice,
+    0
+  );
+  const stockItemCount = inventoryItems.length;
+
   const expenseByCategory: Record<string, { name: string; amount: number; color: string }> = {};
   expenses.forEach((e) => {
     if (!expenseByCategory[e.categoryId]) {
@@ -171,6 +182,8 @@ export async function GET(req: NextRequest) {
     totalOrders,
     totalExpenses,
     netProfit: totalSales - totalExpenses,
+    stockValue,
+    stockItemCount,
     cashSales,
     qrSales,
     dineInSales,
