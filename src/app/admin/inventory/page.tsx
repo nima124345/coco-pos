@@ -163,24 +163,24 @@ export default function AdminInventoryPage() {
               return (
                 <li
                   key={item.id}
-                  className="group grid grid-cols-[1fr_auto] md:grid-cols-[1.5fr_6rem_6rem_7rem_5rem_auto] items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors"
+                  className="group grid grid-cols-[1fr_auto] lg:grid-cols-[1.5fr_6rem_6rem_7rem_5rem_auto] items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors"
                 >
                   <div className="min-w-0">
                     <p className="font-medium truncate">{item.name}</p>
-                    <p className="md:hidden text-xs text-slate-500 mt-0.5">
+                    <p className="lg:hidden text-xs text-slate-500 mt-0.5">
                       คงเหลือ <span className="font-semibold text-slate-700">{item.quantity} {item.unit}</span> · ขั้นต่ำ {item.minStock}
                     </p>
                   </div>
-                  <span className="hidden md:block text-center font-bold tabular-nums">
+                  <span className="hidden lg:block text-center font-bold tabular-nums">
                     {item.quantity} <span className="text-xs font-normal text-slate-400">{item.unit}</span>
                   </span>
-                  <span className="hidden md:block text-center text-sm text-slate-500 tabular-nums">
+                  <span className="hidden lg:block text-center text-sm text-slate-500 tabular-nums">
                     {item.minStock} <span className="text-xs text-slate-400">{item.unit}</span>
                   </span>
-                  <span className="hidden md:block text-right text-sm tabular-nums">
+                  <span className="hidden lg:block text-right text-sm tabular-nums">
                     {formatCurrency(item.costPrice)}<span className="text-xs text-slate-400">/{item.unit}</span>
                   </span>
-                  <div className="hidden md:flex justify-center">
+                  <div className="hidden lg:flex justify-center">
                     <Badge variant={status.variant}>{status.label}</Badge>
                   </div>
                   <div className="flex items-center justify-end gap-1">

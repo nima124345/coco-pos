@@ -296,7 +296,7 @@ export default function AdminMenuPage() {
                   return (
                     <li
                       key={item.id}
-                      className="group grid grid-cols-[1fr_auto_auto] md:grid-cols-[1.5fr_9rem_6rem_8rem_5rem_5rem] items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors"
+                      className="group grid grid-cols-[1fr_auto_auto] lg:grid-cols-[1.5fr_9rem_6rem_8rem_5rem_5rem] items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors"
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         {item.image ? (
@@ -308,13 +308,13 @@ export default function AdminMenuPage() {
                         )}
                         <span className="font-medium truncate">{item.name}</span>
                       </div>
-                      <span className="hidden md:block text-sm text-slate-500 truncate">
+                      <span className="hidden lg:block text-sm text-slate-500 truncate">
                         {item.category?.emoji} {item.category?.name}
                       </span>
-                      <span className="hidden md:block text-right font-bold text-amber-600 tabular-nums">
+                      <span className="hidden lg:block text-right font-bold text-amber-600 tabular-nums">
                         {formatCurrency(item.price)}
                       </span>
-                      <div className="hidden md:flex flex-col items-end">
+                      <div className="hidden lg:flex flex-col items-end">
                         <span className={`font-bold tabular-nums ${sameAsStore ? "text-slate-400" : "text-orange-600"}`}>
                           {formatCurrency(effectiveShopee)}
                         </span>
@@ -326,7 +326,7 @@ export default function AdminMenuPage() {
                           </span>
                         )}
                       </div>
-                      <div className="hidden md:flex justify-center">
+                      <div className="hidden lg:flex justify-center">
                         <Badge variant={item.active ? "success" : "destructive"}>{item.active ? "ขายอยู่" : "ปิด"}</Badge>
                       </div>
                       <div className="flex items-center gap-1 justify-end opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">

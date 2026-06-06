@@ -199,7 +199,7 @@ export default function StaffShiftPage() {
                   </div>
                   <Badge variant="outline">{shift._count.orders} ออเดอร์</Badge>
                 </div>
-                <div className="grid grid-cols-4 gap-3 text-center">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
                   <div className="bg-slate-50 rounded-xl p-2">
                     <p className="text-xs text-slate-500">เงินเปิดร้าน</p>
                     <p className="font-bold text-sm">

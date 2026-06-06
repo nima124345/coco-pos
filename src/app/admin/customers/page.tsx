@@ -269,7 +269,7 @@ export default function AdminCustomersPage() {
         </span>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-200 overflow-x-auto">
         {filtered.length === 0 ? (
           <div className="p-12 text-center text-slate-400">
             {totalCustomers === 0
@@ -284,7 +284,7 @@ export default function AdminCustomersPage() {
               return (
                 <li
                   key={c.phone}
-                  className="grid grid-cols-[1fr_auto_2.5rem] md:grid-cols-[9rem_1fr_4rem_7rem_6rem_5rem_6rem_5rem_2.5rem] items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors"
+                  className="grid grid-cols-[1fr_auto_2.5rem] lg:grid-cols-[9rem_1fr_4rem_7rem_6rem_5rem_6rem_5rem_2.5rem] items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors"
                 >
                   <a
                     href={`tel:${c.phone}`}
@@ -295,20 +295,20 @@ export default function AdminCustomersPage() {
                   <span className="text-sm text-slate-700 truncate">
                     {c.name || <span className="text-slate-400">—</span>}
                   </span>
-                  <span className="hidden md:block text-right text-sm font-semibold tabular-nums">
+                  <span className="hidden lg:block text-right text-sm font-semibold tabular-nums">
                     {c.visits}
                   </span>
-                  <span className="hidden md:block text-right font-bold text-green-600 tabular-nums">
+                  <span className="hidden lg:block text-right font-bold text-green-600 tabular-nums">
                     {formatCurrency(c.totalSpent)}
                   </span>
                   <span
-                    className="hidden md:block text-sm text-slate-500 tabular-nums"
+                    className="hidden lg:block text-sm text-slate-500 tabular-nums"
                     title={c.lastVisit}
                   >
                     {formatDateShort(c.lastVisit)}
                   </span>
                   <span
-                    className={`hidden md:block text-sm tabular-nums ${
+                    className={`hidden lg:block text-sm tabular-nums ${
                       c.daysSinceLastVisit > 60
                         ? "text-red-600"
                         : c.daysSinceLastVisit > 30
@@ -318,7 +318,7 @@ export default function AdminCustomersPage() {
                   >
                     {relativeDays(c.daysSinceLastVisit)}
                   </span>
-                  <div className="hidden md:flex justify-center">
+                  <div className="hidden lg:flex justify-center">
                     <Badge variant="outline" className={seg.color}>
                       {seg.emoji} {seg.label}
                     </Badge>
@@ -326,7 +326,7 @@ export default function AdminCustomersPage() {
                   <div className="flex justify-end">
                     <span className="inline-flex items-center gap-1.5 text-xs">
                       <span className={`w-2 h-2 rounded-full ${st.dot}`} />
-                      <span className="hidden md:inline text-slate-600">{st.label}</span>
+                      <span className="hidden lg:inline text-slate-600">{st.label}</span>
                     </span>
                   </div>
                   <button

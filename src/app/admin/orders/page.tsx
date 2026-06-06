@@ -261,7 +261,7 @@ export default function AdminOrdersPage() {
         })}
       </div>
 
-      <div className="flex gap-6">
+      <div className="flex flex-col lg:flex-row gap-6">
         {/* Order List */}
         <div className="flex-1 max-h-[calc(100vh-200px)] overflow-y-auto bg-white rounded-2xl border border-slate-200">
           {filteredOrders.length === 0 ? (
@@ -279,7 +279,7 @@ export default function AdminOrdersPage() {
                   <li
                     key={order.id}
                     onClick={() => setSelectedOrder(order)}
-                    className={`grid grid-cols-[3.5rem_1fr_auto] md:grid-cols-[3.5rem_5rem_1fr_8rem_5rem_6rem] items-center gap-3 px-4 py-3 cursor-pointer transition-colors ${
+                    className={`grid grid-cols-[3.5rem_1fr_auto] lg:grid-cols-[3.5rem_5rem_1fr_8rem_5rem_6rem] items-center gap-3 px-4 py-3 cursor-pointer transition-colors ${
                       isSelected
                         ? "bg-amber-50 border-l-4 border-amber-500"
                         : "hover:bg-slate-50 border-l-4 border-transparent"
@@ -294,7 +294,7 @@ export default function AdminOrdersPage() {
                     >
                       #{order.orderNumber}
                     </span>
-                    <span className="hidden md:block text-xs text-slate-500 tabular-nums">
+                    <span className="hidden lg:block text-xs text-slate-500 tabular-nums">
                       {new Date(order.createdAt).toLocaleTimeString("th-TH", {
                         hour: "2-digit",
                         minute: "2-digit",
@@ -312,12 +312,12 @@ export default function AdminOrdersPage() {
                         </p>
                       )}
                     </div>
-                    <div className="hidden md:flex justify-center">
+                    <div className="hidden lg:flex justify-center">
                       <Badge variant="outline" className={ch.cls}>
                         {ch.emoji} {ch.label}
                       </Badge>
                     </div>
-                    <div className="hidden md:flex justify-center">
+                    <div className="hidden lg:flex justify-center">
                       <Badge
                         variant={order.status === "COMPLETED" ? "success" : "destructive"}
                       >
@@ -336,7 +336,7 @@ export default function AdminOrdersPage() {
 
         {/* Detail Panel */}
         {selectedOrder && (
-          <Card className="w-96 p-4 self-start sticky top-6">
+          <Card className="w-full lg:w-96 p-4 self-start lg:sticky lg:top-6">
             <div className="flex items-start justify-between mb-3">
               <h3 className="font-bold text-lg">
                 ออเดอร์ #{selectedOrder.orderNumber}

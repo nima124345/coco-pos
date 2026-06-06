@@ -247,7 +247,7 @@ export default function AdminExpensesPage() {
             {expenses.map((expense) => (
               <li
                 key={expense.id}
-                className="group grid grid-cols-[5rem_8rem_1fr_auto_2rem] md:grid-cols-[7rem_10rem_1fr_8rem_3rem] items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors"
+                className="group grid grid-cols-[5rem_8rem_1fr_auto_2rem] lg:grid-cols-[7rem_10rem_1fr_8rem_3rem] items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors"
               >
                 <span className="text-xs md:text-sm text-slate-500 tabular-nums">
                   {formatDate(expense.date)}

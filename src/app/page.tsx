@@ -7,6 +7,20 @@ import { useAuthStore, AuthBranch, AuthBoothEvent } from "@/store/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import {
+  Eye,
+  EyeOff,
+  ArrowRight,
+  Store,
+  Tent,
+  Check,
+  X,
+  ChevronRight,
+  User,
+  Lock,
+  BarChart3,
+  ShieldCheck,
+} from "lucide-react";
 
 interface LoginResponse {
   id: string;
@@ -16,6 +30,16 @@ interface LoginResponse {
   branches: AuthBranch[];
   boothEvents: AuthBoothEvent[];
 }
+
+const FEATURES = [
+  { icon: Store, label: "หลายสาขา", desc: "ดูแลทุกสาขาในที่เดียว" },
+  { icon: Tent, label: "ออกบูธ", desc: "เปิดรอบขายนอกสถานที่" },
+  { icon: BarChart3, label: "รายงานยอดขาย", desc: "สรุปยอดแบบเรียลไทม์" },
+];
+
+// ใช้ซ้ำกับทุก input ในหน้านี้ — โทน stone + โฟกัสเขียวแบรนด์
+const fieldClass =
+  "h-12 rounded-xl border-stone-200 bg-white pl-11 text-[15px] text-stone-900 placeholder:text-stone-400 focus:border-[#1f7d3b] focus:ring-[#1f7d3b]/15";
 
 export default function LoginPage() {
   const [mode, setMode] = useState<"login" | "register">("login");
@@ -188,120 +212,168 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-white">
-      <aside className="relative hidden lg:flex lg:w-1/2 overflow-hidden bg-gradient-to-br from-lime-400 via-green-500 to-emerald-700 p-12 items-center justify-center">
-        <div className="absolute -top-24 -left-24 w-96 h-96 bg-lime-300/40 rounded-full blur-3xl" />
-        <div className="absolute -bottom-20 -right-20 w-[28rem] h-[28rem] bg-emerald-400/30 rounded-full blur-3xl" />
+    <div className="flex min-h-screen flex-col md:flex-row">
+      {/* ── แผงแบรนด์ (แท็บเล็ตขึ้นไป) ─────────────────────── */}
+      <aside className="relative hidden overflow-hidden bg-[#0c2716] p-8 md:flex md:w-[44%] lg:w-[46%] lg:p-12 xl:p-14">
+        {/* texture: จุดละเอียดให้พื้นมีมิติ ไม่เรียบจนแบน */}
+        <div
+          aria-hidden
+          className="absolute inset-0 opacity-60"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 1px 1px, rgba(255,255,255,0.05) 1px, transparent 0)",
+            backgroundSize: "22px 22px",
+          }}
+        />
+        {/* กรอบเส้นบางแบบ editorial */}
+        <div aria-hidden className="absolute inset-6 rounded-[1.75rem] border border-white/[0.07]" />
 
-        <div className="relative z-10 text-center max-w-md">
-          <div className="mx-auto w-52 h-52 rounded-[2rem] overflow-hidden shadow-2xl shadow-emerald-900/40 ring-4 ring-white/40 mb-10">
-            <Image
-              src="/coco-zone-logo.jpg"
-              alt="Coco Zone"
-              width={208}
-              height={208}
-              priority
-              className="w-full h-full object-cover"
-            />
-          </div>
-          <h1 className="text-5xl font-extrabold text-white mb-3 tracking-tight drop-shadow">
-            Coco Zone
-          </h1>
-          <p className="text-green-50/90 text-lg mb-10">
-            ระบบจัดการร้านน้ำปั่น + ออกบูธ
-          </p>
-
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { icon: "🏪", label: "หลายสาขา" },
-              { icon: "🎪", label: "ออกบูธ" },
-              { icon: "📊", label: "รายงาน" },
-            ].map((f) => (
-              <div
-                key={f.label}
-                className="bg-white/15 backdrop-blur-md rounded-2xl p-4 border border-white/20"
-              >
-                <div className="text-3xl mb-1">{f.icon}</div>
-                <div className="text-xs text-white/90 font-medium">{f.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="absolute bottom-6 left-0 right-0 text-center text-xs text-white/60">
-          © {new Date().getFullYear()} Coco Zone POS
-        </div>
-      </aside>
-
-      <main className="flex-1 flex items-center justify-center p-6 lg:p-12 relative">
-        <div className="absolute inset-0 lg:hidden bg-gradient-to-br from-lime-50 via-white to-emerald-50" />
-
-        <div className="relative w-full max-w-md">
-          <div className="lg:hidden text-center mb-8">
-            <div className="mx-auto w-24 h-24 rounded-2xl overflow-hidden shadow-lg ring-2 ring-green-200 mb-4">
+        <div className="relative z-10 flex h-full w-full flex-col justify-between">
+          {/* แบรนด์มาร์ก */}
+          <div className="flex items-center gap-3">
+            <div className="h-11 w-11 overflow-hidden rounded-xl shadow-sm ring-1 ring-white/15">
               <Image
                 src="/coco-zone-logo.jpg"
                 alt="Coco Zone"
-                width={96}
-                height={96}
+                width={44}
+                height={44}
                 priority
-                className="w-full h-full object-cover"
+                className="h-full w-full object-cover"
               />
             </div>
-            <h1 className="text-2xl font-bold text-slate-900">Coco Zone</h1>
+            <div>
+              <p className="font-semibold leading-none tracking-tight text-white">Coco Zone</p>
+              <p className="mt-1.5 text-[10px] font-medium uppercase tracking-[0.22em] text-lime-300/80">
+                POS System
+              </p>
+            </div>
           </div>
 
-          <div className="mb-8">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-50 text-green-700 text-xs font-medium mb-4 border border-green-100">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-              ระบบพร้อมใช้งาน
-            </div>
-            <h2 className="text-3xl font-bold text-slate-900 mb-2">
-              {mode === "login" ? "ยินดีต้อนรับกลับ 👋" : "สมัครสมาชิก 📝"}
+          {/* พาดหัว + ฟีเจอร์ ดันลงล่าง */}
+          <div className="mt-auto pt-12">
+            <h2 className="text-[2rem] font-bold leading-[1.06] tracking-tight text-white lg:text-[2.6rem]">
+              ขายหน้าร้าน
+              <br />
+              ออกบูธ
+              <br />
+              <span className="text-lime-300">จบในระบบเดียว</span>
             </h2>
-            <p className="text-slate-500">
+            <p className="mt-5 max-w-sm text-[15px] leading-relaxed text-white/55">
+              ระบบจัดการร้านน้ำปั่น Coco Zone ดูแลหลายสาขาและการออกบูธ
+              พร้อมสรุปยอดขายแบบเรียลไทม์
+            </p>
+
+            <div className="mt-10 max-w-sm divide-y divide-white/10 border-y border-white/10">
+              {FEATURES.map((f) => (
+                <div key={f.label} className="flex items-center gap-4 py-3.5">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/[0.06] text-lime-300 ring-1 ring-white/10">
+                    <f.icon size={17} strokeWidth={1.75} />
+                  </span>
+                  <div>
+                    <p className="text-sm font-medium text-white">{f.label}</p>
+                    <p className="text-xs text-white/45">{f.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <p className="text-[11px] text-white/35">
+            © {new Date().getFullYear()} Coco Zone POS
+          </p>
+        </div>
+      </aside>
+
+      {/* ── ฟอร์ม ─────────────────────────────────────────── */}
+      <main className="relative flex flex-1 items-center justify-center bg-[#f6f4ec] px-6 py-10 sm:px-10">
+        <div className="w-full max-w-[400px]">
+          {/* แบรนด์มาร์ก (มือถือ) */}
+          <div className="mb-9 flex items-center gap-3 md:hidden">
+            <div className="h-11 w-11 overflow-hidden rounded-xl shadow-sm ring-1 ring-stone-200">
+              <Image
+                src="/coco-zone-logo.jpg"
+                alt="Coco Zone"
+                width={44}
+                height={44}
+                priority
+                className="h-full w-full object-cover"
+              />
+            </div>
+            <div>
+              <p className="font-semibold leading-none tracking-tight text-stone-900">Coco Zone</p>
+              <p className="mt-1.5 text-[10px] font-medium uppercase tracking-[0.22em] text-[#1f7d3b]">
+                POS System
+              </p>
+            </div>
+          </div>
+
+          <div className="mb-7">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#1f7d3b]">
+              {mode === "login" ? "เข้าใช้งานระบบ" : "เปิดบัญชีใหม่"}
+            </p>
+            <h1 className="mt-2 text-[27px] font-bold tracking-tight text-stone-900">
+              {mode === "login" ? "เข้าสู่ระบบ" : "สมัครสมาชิก"}
+            </h1>
+            <p className="mt-1.5 text-[14px] text-stone-500">
               {mode === "login"
-                ? "กรอกข้อมูลเพื่อเข้าใช้งานระบบ POS"
-                : "สร้างบัญชีใหม่เพื่อเข้าใช้งานระบบ"}
+                ? "กรอกชื่อผู้ใช้และรหัสผ่านเพื่อเริ่มงาน"
+                : "สร้างบัญชีพนักงานเพื่อเข้าใช้งานระบบ"}
             </p>
           </div>
 
           {mode === "login" ? (
             <>
-              <form onSubmit={handleLogin} className="space-y-5">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">ชื่อผู้ใช้</label>
-                  <Input
-                    placeholder="กรอกชื่อผู้ใช้"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    autoFocus
-                    className="h-12 rounded-2xl border-slate-200 focus:border-green-500 focus:ring-green-500/20"
-                  />
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div>
+                  <label className="mb-1.5 block text-[13px] font-medium text-stone-600">
+                    ชื่อผู้ใช้
+                  </label>
+                  <div className="relative">
+                    <User
+                      size={18}
+                      strokeWidth={1.75}
+                      className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400"
+                    />
+                    <Input
+                      placeholder="กรอกชื่อผู้ใช้"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      autoFocus
+                      className={fieldClass}
+                    />
+                  </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">รหัสผ่าน</label>
+                <div>
+                  <label className="mb-1.5 block text-[13px] font-medium text-stone-600">
+                    รหัสผ่าน
+                  </label>
                   <div className="relative">
+                    <Lock
+                      size={18}
+                      strokeWidth={1.75}
+                      className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400"
+                    />
                     <Input
                       type={showPassword ? "text" : "password"}
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="pr-11 h-12 rounded-2xl border-slate-200 focus:border-green-500 focus:ring-green-500/20"
+                      className={cn(fieldClass, "pr-11")}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword((v) => !v)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer text-xs"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer p-1 text-stone-400 transition-colors hover:text-stone-700"
+                      aria-label={showPassword ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}
                     >
-                      {showPassword ? "🙈" : "👁️"}
+                      {showPassword ? <EyeOff size={18} strokeWidth={1.75} /> : <Eye size={18} strokeWidth={1.75} />}
                     </button>
                   </div>
                 </div>
 
                 {error && (
-                  <div className="bg-red-50 border border-red-200 text-red-600 text-sm p-3.5 rounded-2xl">
+                  <div className="rounded-xl border-l-2 border-red-400 bg-red-50 px-3.5 py-3 text-[13px] text-red-700">
                     {error}
                   </div>
                 )}
@@ -309,179 +381,226 @@ export default function LoginPage() {
                 <Button
                   type="submit"
                   size="lg"
-                  className="w-full h-12 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold rounded-2xl shadow-lg shadow-green-500/30"
+                  className="group mt-1 h-12 w-full rounded-xl bg-[#1f7d3b] text-[15px] font-semibold text-white shadow-sm hover:bg-[#1a6c33] disabled:opacity-60"
                   disabled={loading}
                 >
-                  {loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ →"}
+                  {loading ? "กำลังเข้าสู่ระบบ…" : "เข้าสู่ระบบ"}
+                  {!loading && (
+                    <ArrowRight
+                      size={18}
+                      className="ml-1.5 transition-transform group-hover:translate-x-0.5"
+                    />
+                  )}
                 </Button>
               </form>
 
-              <div className="mt-6 text-center">
-                <p className="text-sm text-slate-500">
-                  ยังไม่มีบัญชี?{" "}
-                  <button
-                    type="button"
-                    onClick={() => switchMode("register")}
-                    className="text-green-600 hover:text-green-700 font-semibold cursor-pointer"
-                  >
-                    สมัครสมาชิก
-                  </button>
-                </p>
-              </div>
+              <p className="mt-6 text-center text-[14px] text-stone-500">
+                ยังไม่มีบัญชี?{" "}
+                <button
+                  type="button"
+                  onClick={() => switchMode("register")}
+                  className="cursor-pointer font-semibold text-[#1f7d3b] hover:underline"
+                >
+                  สมัครสมาชิก
+                </button>
+              </p>
 
-              {process.env.NODE_ENV === 'development' && (
-              <div className="mt-6">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="h-px bg-slate-200 flex-1" />
-                  <span className="text-xs text-slate-400 uppercase tracking-wider font-medium">
-                    บัญชีทดสอบ
-                  </span>
-                  <div className="h-px bg-slate-200 flex-1" />
+              {process.env.NODE_ENV === "development" && (
+                <div className="mt-9">
+                  <div className="mb-3 flex items-center gap-3">
+                    <div className="h-px flex-1 bg-stone-200" />
+                    <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-stone-400">
+                      บัญชีทดสอบ
+                    </span>
+                    <div className="h-px flex-1 bg-stone-200" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => fillDemo("admin")}
+                      className="flex cursor-pointer items-center gap-3 rounded-xl border border-stone-200 bg-white/60 p-3 text-left transition-colors hover:border-[#1f7d3b]/40 hover:bg-[#1f7d3b]/[0.04]"
+                    >
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-stone-100 text-stone-500">
+                        <ShieldCheck size={16} strokeWidth={1.75} />
+                      </span>
+                      <div>
+                        <div className="text-[13px] font-semibold text-stone-700">Admin</div>
+                        <code className="font-mono text-[11px] text-stone-400">admin / 1234</code>
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => fillDemo("staff")}
+                      className="flex cursor-pointer items-center gap-3 rounded-xl border border-stone-200 bg-white/60 p-3 text-left transition-colors hover:border-[#1f7d3b]/40 hover:bg-[#1f7d3b]/[0.04]"
+                    >
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-stone-100 text-stone-500">
+                        <User size={16} strokeWidth={1.75} />
+                      </span>
+                      <div>
+                        <div className="text-[13px] font-semibold text-stone-700">Staff</div>
+                        <code className="font-mono text-[11px] text-stone-400">staff / 1234</code>
+                      </div>
+                    </button>
+                  </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => fillDemo("admin")}
-                    className="text-left p-3 rounded-2xl border border-slate-200 hover:border-green-300 hover:bg-green-50/50 cursor-pointer"
-                  >
-                    <div className="text-xs font-semibold text-slate-700 mb-1">
-                      👑 Admin
-                    </div>
-                    <code className="text-[11px] text-slate-500 font-mono">
-                      admin / 1234
-                    </code>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => fillDemo("staff")}
-                    className="text-left p-3 rounded-2xl border border-slate-200 hover:border-green-300 hover:bg-green-50/50 cursor-pointer"
-                  >
-                    <div className="text-xs font-semibold text-slate-700 mb-1">
-                      🧑‍💼 Staff
-                    </div>
-                    <code className="text-[11px] text-slate-500 font-mono">
-                      staff / 1234
-                    </code>
-                  </button>
-                </div>
-              </div>
               )}
             </>
           ) : (
             <>
-              <form onSubmit={handleRegister} className="space-y-5">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">ชื่อ-นามสกุล</label>
-                  <Input
-                    placeholder="กรอกชื่อ-นามสกุล"
-                    value={regName}
-                    onChange={(e) => setRegName(e.target.value)}
-                    autoFocus
-                    className="h-12 rounded-2xl border-slate-200 focus:border-green-500 focus:ring-green-500/20"
-                  />
+              <form onSubmit={handleRegister} className="space-y-4">
+                <div>
+                  <label className="mb-1.5 block text-[13px] font-medium text-stone-600">
+                    ชื่อ-นามสกุล
+                  </label>
+                  <div className="relative">
+                    <User
+                      size={18}
+                      strokeWidth={1.75}
+                      className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400"
+                    />
+                    <Input
+                      placeholder="กรอกชื่อ-นามสกุล"
+                      value={regName}
+                      onChange={(e) => setRegName(e.target.value)}
+                      autoFocus
+                      className={fieldClass}
+                    />
+                  </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">ชื่อผู้ใช้</label>
-                  <Input
-                    placeholder="กรอกชื่อผู้ใช้ (อย่างน้อย 3 ตัวอักษร)"
-                    value={regUsername}
-                    onChange={(e) => setRegUsername(e.target.value)}
-                    className="h-12 rounded-2xl border-slate-200 focus:border-green-500 focus:ring-green-500/20"
-                  />
+                <div>
+                  <label className="mb-1.5 block text-[13px] font-medium text-stone-600">
+                    ชื่อผู้ใช้
+                  </label>
+                  <div className="relative">
+                    <User
+                      size={18}
+                      strokeWidth={1.75}
+                      className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400"
+                    />
+                    <Input
+                      placeholder="อย่างน้อย 3 ตัวอักษร"
+                      value={regUsername}
+                      onChange={(e) => setRegUsername(e.target.value)}
+                      className={fieldClass}
+                    />
+                  </div>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3.5 flex items-center gap-3">
-                  <div className="text-lg">🧑‍💼</div>
+                <div className="flex items-center gap-3 rounded-xl border border-stone-200 bg-white/60 p-3.5">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-stone-100 text-stone-500">
+                    <User size={17} strokeWidth={1.75} />
+                  </span>
                   <div>
-                    <div className="text-sm font-bold text-slate-900">บัญชีพนักงาน (Staff)</div>
-                    <div className="text-[11px] text-slate-500">
+                    <div className="text-[13px] font-semibold text-stone-900">บัญชีพนักงาน (Staff)</div>
+                    <div className="text-[11px] leading-snug text-stone-500">
                       สิทธิ์แอดมินต้องให้แอดมินที่มีอยู่เป็นผู้เพิ่มให้
                     </div>
                   </div>
                 </div>
 
                 {allBranches.length > 0 && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">สาขาที่ประจำ</label>
-                  <div className="grid grid-cols-1 gap-2">
-                    {allBranches.map((b) => (
-                      <button
-                        key={b.id}
-                        type="button"
-                        onClick={() =>
-                          setRegBranchIds((prev) =>
-                            prev.includes(b.id)
-                              ? prev.filter((id) => id !== b.id)
-                              : [...prev, b.id]
-                          )
-                        }
-                        className={cn(
-                          "p-3 rounded-2xl border-2 text-left cursor-pointer transition-all flex items-center gap-3",
-                          regBranchIds.includes(b.id)
-                            ? "border-green-400 bg-green-50 shadow-md shadow-green-500/10"
-                            : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
-                        )}
-                      >
-                        <div className={cn(
-                          "w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors",
-                          regBranchIds.includes(b.id)
-                            ? "border-green-500 bg-green-500 text-white"
-                            : "border-slate-300"
-                        )}>
-                          {regBranchIds.includes(b.id) && (
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                          )}
-                        </div>
-                        <div>
-                          <span className="text-sm font-medium text-slate-900">🏪 {b.name}</span>
-                        </div>
-                      </button>
-                    ))}
+                  <div>
+                    <label className="mb-1.5 block text-[13px] font-medium text-stone-600">
+                      สาขาที่ประจำ
+                    </label>
+                    <div className="space-y-2">
+                      {allBranches.map((b) => {
+                        const active = regBranchIds.includes(b.id);
+                        return (
+                          <button
+                            key={b.id}
+                            type="button"
+                            onClick={() =>
+                              setRegBranchIds((prev) =>
+                                prev.includes(b.id)
+                                  ? prev.filter((id) => id !== b.id)
+                                  : [...prev, b.id]
+                              )
+                            }
+                            className={cn(
+                              "flex w-full cursor-pointer items-center gap-3 rounded-xl border p-3 text-left transition-colors",
+                              active
+                                ? "border-[#1f7d3b] bg-[#1f7d3b]/[0.05]"
+                                : "border-stone-200 hover:border-stone-300 hover:bg-stone-50"
+                            )}
+                          >
+                            <span
+                              className={cn(
+                                "flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors",
+                                active
+                                  ? "border-[#1f7d3b] bg-[#1f7d3b] text-white"
+                                  : "border-stone-300"
+                              )}
+                            >
+                              {active && <Check size={13} strokeWidth={3} />}
+                            </span>
+                            <Store size={16} strokeWidth={1.75} className="text-stone-400" />
+                            <span className="text-[14px] font-medium text-stone-900">{b.name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="mt-1.5 text-[11px] text-stone-400">เลือกได้หลายสาขา (ไม่เลือกก็ได้)</p>
                   </div>
-                  <p className="text-[11px] text-slate-400">เลือกได้หลายสาขา (ไม่เลือกก็ได้)</p>
-                </div>
                 )}
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">รหัสผ่าน</label>
+                <div>
+                  <label className="mb-1.5 block text-[13px] font-medium text-stone-600">
+                    รหัสผ่าน
+                  </label>
                   <div className="relative">
+                    <Lock
+                      size={18}
+                      strokeWidth={1.75}
+                      className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400"
+                    />
                     <Input
                       type={showPassword ? "text" : "password"}
-                      placeholder="กรอกรหัสผ่าน (อย่างน้อย 4 ตัวอักษร)"
+                      placeholder="อย่างน้อย 4 ตัวอักษร"
                       value={regPassword}
                       onChange={(e) => setRegPassword(e.target.value)}
-                      className="pr-11 h-12 rounded-2xl border-slate-200 focus:border-green-500 focus:ring-green-500/20"
+                      className={cn(fieldClass, "pr-11")}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword((v) => !v)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer text-xs"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer p-1 text-stone-400 transition-colors hover:text-stone-700"
+                      aria-label={showPassword ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}
                     >
-                      {showPassword ? "🙈" : "👁️"}
+                      {showPassword ? <EyeOff size={18} strokeWidth={1.75} /> : <Eye size={18} strokeWidth={1.75} />}
                     </button>
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">ยืนยันรหัสผ่าน</label>
-                  <Input
-                    type={showPassword ? "text" : "password"}
-                    placeholder="กรอกรหัสผ่านอีกครั้ง"
-                    value={regConfirmPassword}
-                    onChange={(e) => setRegConfirmPassword(e.target.value)}
-                    className="h-12 rounded-2xl border-slate-200 focus:border-green-500 focus:ring-green-500/20"
-                  />
+                <div>
+                  <label className="mb-1.5 block text-[13px] font-medium text-stone-600">
+                    ยืนยันรหัสผ่าน
+                  </label>
+                  <div className="relative">
+                    <Lock
+                      size={18}
+                      strokeWidth={1.75}
+                      className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400"
+                    />
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      placeholder="กรอกรหัสผ่านอีกครั้ง"
+                      value={regConfirmPassword}
+                      onChange={(e) => setRegConfirmPassword(e.target.value)}
+                      className={fieldClass}
+                    />
+                  </div>
                 </div>
 
                 {error && (
-                  <div className="bg-red-50 border border-red-200 text-red-600 text-sm p-3.5 rounded-2xl">
+                  <div className="rounded-xl border-l-2 border-red-400 bg-red-50 px-3.5 py-3 text-[13px] text-red-700">
                     {error}
                   </div>
                 )}
 
                 {success && (
-                  <div className="bg-green-50 border border-green-200 text-green-600 text-sm p-3.5 rounded-2xl">
+                  <div className="rounded-xl border-l-2 border-[#1f7d3b] bg-[#1f7d3b]/[0.06] px-3.5 py-3 text-[13px] text-[#1a6c33]">
                     {success}
                   </div>
                 )}
@@ -489,130 +608,125 @@ export default function LoginPage() {
                 <Button
                   type="submit"
                   size="lg"
-                  className="w-full h-12 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold rounded-2xl shadow-lg shadow-green-500/30"
+                  className="group mt-1 h-12 w-full rounded-xl bg-[#1f7d3b] text-[15px] font-semibold text-white shadow-sm hover:bg-[#1a6c33] disabled:opacity-60"
                   disabled={loading}
                 >
-                  {loading ? "กำลังสมัคร..." : "สมัครสมาชิก →"}
+                  {loading ? "กำลังสมัคร…" : "สมัครสมาชิก"}
+                  {!loading && (
+                    <ArrowRight
+                      size={18}
+                      className="ml-1.5 transition-transform group-hover:translate-x-0.5"
+                    />
+                  )}
                 </Button>
               </form>
 
-              <div className="mt-6 text-center">
-                <p className="text-sm text-slate-500">
-                  มีบัญชีแล้ว?{" "}
-                  <button
-                    type="button"
-                    onClick={() => switchMode("login")}
-                    className="text-green-600 hover:text-green-700 font-semibold cursor-pointer"
-                  >
-                    เข้าสู่ระบบ
-                  </button>
-                </p>
-              </div>
+              <p className="mt-6 text-center text-[14px] text-stone-500">
+                มีบัญชีแล้ว?{" "}
+                <button
+                  type="button"
+                  onClick={() => switchMode("login")}
+                  className="cursor-pointer font-semibold text-[#1f7d3b] hover:underline"
+                >
+                  เข้าสู่ระบบ
+                </button>
+              </p>
             </>
           )}
         </div>
       </main>
 
+      {/* ── เลือกบริบทการทำงาน (สาขา / บูธ) ────────────────── */}
       {pendingUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-6">
           <div
-            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-stone-900/55 backdrop-blur-sm"
             onClick={() => setPendingUser(null)}
           />
-          <div className="relative w-full h-full sm:h-auto sm:max-h-[92vh] sm:max-w-3xl bg-white sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col">
-            <div className="px-8 py-6 border-b border-slate-100 bg-gradient-to-br from-green-50 to-emerald-50">
+          <div className="relative flex h-full w-full flex-col overflow-hidden bg-white shadow-2xl sm:h-auto sm:max-h-[92vh] sm:max-w-3xl sm:rounded-2xl">
+            <div className="border-b border-stone-100 bg-[#f6f4ec] px-8 py-6">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">
+                  <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-stone-500">
                     สวัสดีคุณ {pendingUser.name}
                   </p>
-                  <h3 className="text-2xl sm:text-3xl font-bold text-slate-900">
+                  <h3 className="text-2xl font-bold tracking-tight text-stone-900 sm:text-[28px]">
                     เลือกที่จะทำงาน
                   </h3>
-                  <p className="text-sm text-slate-600 mt-1">
-                    เลือกสาขาประจำ หรือกดออกบูธ
-                  </p>
+                  <p className="mt-1 text-sm text-stone-500">เลือกสาขาประจำ หรือกดออกบูธ</p>
                 </div>
                 <button
                   onClick={() => setPendingUser(null)}
-                  className="w-10 h-10 rounded-xl bg-white/70 hover:bg-white text-slate-500 hover:text-slate-700 cursor-pointer flex items-center justify-center shrink-0 transition-colors"
+                  className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl bg-white text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-800"
                   aria-label="ปิด"
                 >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="18" x2="6" y1="6" y2="18" />
-                    <line x1="6" x2="18" y1="6" y2="18" />
-                  </svg>
+                  <X size={20} strokeWidth={2} />
                 </button>
               </div>
             </div>
 
-            <div className="px-6 sm:px-8 pt-5">
-              <div className="flex gap-2 bg-slate-100 rounded-2xl p-1.5">
-                <div className="flex-1 py-3 rounded-xl text-sm sm:text-base font-semibold bg-white text-green-700 shadow-md shadow-green-500/10 flex items-center justify-center gap-2">
-                  <span className="text-lg">🏪</span>
+            <div className="px-6 pt-5 sm:px-8">
+              <div className="flex gap-2 rounded-xl bg-stone-100 p-1.5">
+                <div className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-white py-3 text-sm font-semibold text-[#1a6c33] shadow-sm sm:text-base">
+                  <Store size={18} strokeWidth={1.9} />
                   สาขาประจำ
-                  <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700">
+                  <span className="rounded-full bg-[#1f7d3b]/10 px-2 py-0.5 text-xs font-bold text-[#1a6c33]">
                     {pendingUser.branches.length}
                   </span>
                 </div>
                 <button
                   onClick={handleStartBooth}
                   disabled={loading}
-                  className="flex-1 py-3 rounded-xl text-sm sm:text-base font-semibold cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-2 bg-gradient-to-r from-orange-400 to-amber-500 text-white shadow-md shadow-orange-500/20 hover:from-orange-500 hover:to-amber-600"
+                  className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#bb5e2c] py-3 text-sm font-semibold text-white transition-colors hover:bg-[#a4521f] disabled:opacity-50 sm:text-base"
                 >
-                  <span className="text-lg">🎪</span>
-                  {loading ? "กำลังเข้า..." : "ออกบูธ →"}
+                  <Tent size={18} strokeWidth={1.9} />
+                  {loading ? "กำลังเข้า…" : "ออกบูธ"}
                 </button>
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-6 sm:px-8 py-5">
+            <div className="flex-1 overflow-y-auto px-6 py-5 sm:px-8">
               {pendingUser.branches.length === 0 ? (
-                <div className="text-center py-16">
-                  <div className="text-5xl mb-3">🏪</div>
-                  <p className="text-slate-500 font-medium">
-                    คุณยังไม่ได้กำหนดสาขาประจำ
-                  </p>
-                  <p className="text-sm text-slate-400 mt-1">
-                    ติดต่อแอดมินเพื่อเพิ่มสาขา
-                  </p>
+                <div className="py-16 text-center">
+                  <span className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-stone-100 text-stone-400">
+                    <Store size={26} strokeWidth={1.6} />
+                  </span>
+                  <p className="font-medium text-stone-600">คุณยังไม่ได้กำหนดสาขาประจำ</p>
+                  <p className="mt-1 text-sm text-stone-400">ติดต่อแอดมินเพื่อเพิ่มสาขา</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {pendingUser.branches.map((b) => (
                     <button
                       key={b.id}
                       onClick={() => finalize(pendingUser, "BRANCH", b.id)}
-                      className="group p-5 rounded-2xl border-2 text-left cursor-pointer bg-white border-slate-200 hover:border-green-400 hover:bg-green-50/40 hover:shadow-lg hover:-translate-y-0.5 transition-all"
+                      className="group flex items-center gap-3.5 rounded-xl border border-stone-200 p-4 text-left transition-all hover:border-[#1f7d3b]/50 hover:bg-[#1f7d3b]/[0.03]"
                     >
-                      <div className="flex items-start gap-3 mb-2">
-                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center text-2xl shadow-md shadow-green-500/30 shrink-0">
-                          🏪
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-bold text-slate-900 truncate">
-                            {b.name}
-                          </p>
-                          {b.isDefault && (
-                            <span className="inline-block mt-1 text-[10px] font-semibold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
-                              ⭐ ค่าเริ่มต้น
-                            </span>
-                          )}
-                        </div>
+                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#1f7d3b] text-white">
+                        <Store size={20} strokeWidth={1.9} />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-semibold text-stone-900">{b.name}</p>
+                        {b.isDefault && (
+                          <span className="mt-1 inline-block rounded-full bg-[#1f7d3b]/10 px-2 py-0.5 text-[10px] font-semibold text-[#1a6c33]">
+                            ค่าเริ่มต้น
+                          </span>
+                        )}
                       </div>
-                      <div className="flex items-center justify-end text-sm font-medium text-slate-400 group-hover:text-green-600 transition-colors">
-                        เลือกสาขานี้ →
-                      </div>
+                      <ChevronRight
+                        size={18}
+                        className="shrink-0 text-stone-300 transition-colors group-hover:text-[#1f7d3b]"
+                      />
                     </button>
                   ))}
                 </div>
               )}
             </div>
 
-            <div className="px-6 sm:px-8 py-4 border-t border-slate-100 bg-slate-50">
+            <div className="border-t border-stone-100 bg-stone-50 px-6 py-4 sm:px-8">
               <button
                 onClick={() => setPendingUser(null)}
-                className="w-full text-sm font-medium text-slate-600 hover:text-slate-900 py-2 cursor-pointer"
+                className="w-full cursor-pointer py-2 text-sm font-medium text-stone-500 hover:text-stone-900"
               >
                 ยกเลิก
               </button>
