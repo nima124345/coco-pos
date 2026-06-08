@@ -33,6 +33,7 @@ export default function AdminExpensesPage() {
   const [note, setNote] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [showModal, setShowModal] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [scope, setScope] = useState<"current" | "all" | "all-branches" | "all-booths">("current");
   const [filterMonth, setFilterMonth] = useState(
     `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`
@@ -62,26 +63,61 @@ export default function AdminExpensesPage() {
     loadData();
   }, [loadData]);
 
-  const handleAdd = async () => {
-    if (!title || !amount || !categoryId) return;
-    await apiFetch("/api/expenses", {
-      method: "POST",
-      body: JSON.stringify({
-        title,
-        amount: parseFloat(amount),
-        categoryId,
-        note,
-        date,
-      }),
-    });
+  const resetForm = () => {
+    setEditingId(null);
     setTitle("");
     setAmount("");
     setNote("");
+    setDate(new Date().toISOString().split("T")[0]);
+    if (categories.length > 0) setCategoryId(categories[0].id);
+  };
+
+  const openAdd = () => {
+    resetForm();
+    setShowModal(true);
+  };
+
+  const openEdit = (expense: Expense) => {
+    setEditingId(expense.id);
+    setTitle(expense.title);
+    setAmount(String(expense.amount));
+    setNote(expense.note ?? "");
+    setCategoryId(expense.category.id);
+    setDate(expense.date.slice(0, 10));
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
     setShowModal(false);
+    resetForm();
+  };
+
+  const handleSave = async () => {
+    if (!title || !amount || !categoryId) return;
+    const payload = {
+      title,
+      amount: parseFloat(amount),
+      categoryId,
+      note,
+      date,
+    };
+    if (editingId) {
+      await apiFetch(`/api/expenses?id=${editingId}`, {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      });
+    } else {
+      await apiFetch("/api/expenses", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+    }
+    closeModal();
     loadData();
   };
 
   const handleDelete = async (id: string) => {
+    if (!confirm("ต้องการลบรายการนี้ใช่หรือไม่?")) return;
     await apiFetch(`/api/expenses?id=${id}`, { method: "DELETE" });
     loadData();
   };
@@ -179,7 +215,7 @@ export default function AdminExpensesPage() {
             Export CSV
           </Button>
           <Button
-            onClick={() => setShowModal(true)}
+            onClick={openAdd}
             className="h-10 px-5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-xl shadow-lg shadow-amber-500/30"
           >
             + เพิ่มรายจ่าย
@@ -247,7 +283,7 @@ export default function AdminExpensesPage() {
             {expenses.map((expense) => (
               <li
                 key={expense.id}
-                className="group grid grid-cols-[5rem_8rem_1fr_auto_2rem] lg:grid-cols-[7rem_10rem_1fr_8rem_3rem] items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors"
+                className="group grid grid-cols-[5rem_8rem_1fr_auto_4rem] lg:grid-cols-[7rem_10rem_1fr_8rem_5rem] items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors"
               >
                 <span className="text-xs md:text-sm text-slate-500 tabular-nums">
                   {formatDate(expense.date)}
@@ -271,17 +307,29 @@ export default function AdminExpensesPage() {
                 <span className="text-right font-bold text-red-600 tabular-nums whitespace-nowrap">
                   -{formatCurrency(expense.amount)}
                 </span>
-                <button
-                  onClick={() => handleDelete(expense.id)}
-                  aria-label="ลบรายการ"
-                  className="justify-self-end w-8 h-8 rounded-lg text-slate-300 hover:text-red-600 hover:bg-red-50 cursor-pointer flex items-center justify-center opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M3 6h18" />
-                    <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                  </svg>
-                </button>
+                <div className="justify-self-end flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                  <button
+                    onClick={() => openEdit(expense)}
+                    aria-label="แก้ไขรายการ"
+                    className="w-8 h-8 rounded-lg text-slate-300 hover:text-blue-600 hover:bg-blue-50 cursor-pointer flex items-center justify-center"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 20h9" />
+                      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => handleDelete(expense.id)}
+                    aria-label="ลบรายการ"
+                    className="w-8 h-8 rounded-lg text-slate-300 hover:text-red-600 hover:bg-red-50 cursor-pointer flex items-center justify-center"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 6h18" />
+                      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                    </svg>
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
@@ -292,17 +340,21 @@ export default function AdminExpensesPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-            onClick={() => setShowModal(false)}
+            onClick={closeModal}
           />
           <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden">
             <div className="px-6 py-5 border-b border-slate-100 bg-gradient-to-br from-amber-50 to-orange-50">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-xl font-bold text-slate-900">เพิ่มรายจ่าย</h3>
-                  <p className="text-sm text-slate-500 mt-0.5">บันทึกค่าใช้จ่ายใหม่</p>
+                  <h3 className="text-xl font-bold text-slate-900">
+                    {editingId ? "แก้ไขรายจ่าย" : "เพิ่มรายจ่าย"}
+                  </h3>
+                  <p className="text-sm text-slate-500 mt-0.5">
+                    {editingId ? "แก้ไขค่าใช้จ่ายรายการนี้" : "บันทึกค่าใช้จ่ายใหม่"}
+                  </p>
                 </div>
                 <button
-                  onClick={() => setShowModal(false)}
+                  onClick={closeModal}
                   className="w-10 h-10 rounded-xl bg-white/70 hover:bg-white text-slate-500 hover:text-slate-700 cursor-pointer flex items-center justify-center transition-colors"
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -372,17 +424,17 @@ export default function AdminExpensesPage() {
 
             <div className="px-6 pb-6 flex gap-3">
               <Button
-                onClick={() => setShowModal(false)}
+                onClick={closeModal}
                 variant="outline"
                 className="flex-1 h-12 rounded-xl"
               >
                 ยกเลิก
               </Button>
               <Button
-                onClick={handleAdd}
+                onClick={handleSave}
                 className="flex-1 h-12 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-xl shadow-lg shadow-amber-500/30"
               >
-                บันทึกรายจ่าย
+                {editingId ? "บันทึกการแก้ไข" : "บันทึกรายจ่าย"}
               </Button>
             </div>
           </div>

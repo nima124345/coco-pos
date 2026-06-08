@@ -30,3 +30,29 @@ export function formatShortDate(date: Date | string): string {
     month: "short",
   }).format(new Date(date));
 }
+
+// Payment methods. Stored values "CASH"/"QR" are kept for backward
+// compatibility with existing orders and reports; only labels changed.
+export type PaymentMethod = "CASH" | "QR" | "THAI_PLUS";
+
+export const PAYMENT_METHODS: {
+  value: PaymentMethod;
+  label: string;
+  emoji: string;
+}[] = [
+  { value: "CASH", label: "เงินสด", emoji: "💵" },
+  { value: "QR", label: "เงินโอน", emoji: "📱" },
+  { value: "THAI_PLUS", label: "ไทยช่วยไทยพลัส", emoji: "🇹🇭" },
+];
+
+export function paymentMethodMeta(method: string): {
+  label: string;
+  emoji: string;
+} {
+  return (
+    PAYMENT_METHODS.find((m) => m.value === method) ?? {
+      label: method,
+      emoji: "💳",
+    }
+  );
+}

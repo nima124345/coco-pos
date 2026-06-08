@@ -62,6 +62,27 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(expense);
 }
 
+export async function PUT(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const id = searchParams.get("id");
+  if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+
+  const body = await req.json();
+  const data: Record<string, unknown> = {};
+  if (body.title !== undefined) data.title = body.title;
+  if (body.amount !== undefined) data.amount = body.amount;
+  if (body.categoryId !== undefined) data.categoryId = body.categoryId;
+  if (body.note !== undefined) data.note = body.note || "";
+  if (body.date !== undefined) data.date = new Date(body.date);
+
+  const expense = await prisma.expense.update({
+    where: { id },
+    data,
+    include: { category: true },
+  });
+  return NextResponse.json(expense);
+}
+
 export async function DELETE(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");

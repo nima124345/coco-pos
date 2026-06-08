@@ -7,7 +7,12 @@ import { apiFetch } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { formatCurrency, cn } from "@/lib/utils";
+import {
+  formatCurrency,
+  cn,
+  PAYMENT_METHODS,
+  type PaymentMethod,
+} from "@/lib/utils";
 
 interface MenuItem {
   id: string;
@@ -51,7 +56,7 @@ export default function StaffPOS() {
   const [note, setNote] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [showPayment, setShowPayment] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<"CASH" | "QR">("CASH");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CASH");
   const [channel, setChannel] = useState<"DINE_IN" | "DELIVERY" | "SHOPEE">(
     "DINE_IN"
   );
@@ -625,31 +630,31 @@ export default function StaffPOS() {
                   <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
                     วิธีชำระเงิน
                   </p>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      onClick={() => setPaymentMethod("CASH")}
-                      className={cn(
-                        "flex flex-col items-center gap-1 py-3 rounded-xl font-medium transition-all cursor-pointer border-2",
-                        paymentMethod === "CASH"
+                  <div className="grid grid-cols-3 gap-2">
+                    {PAYMENT_METHODS.map((pm) => {
+                      const active = paymentMethod === pm.value;
+                      const activeClass =
+                        pm.value === "CASH"
                           ? "bg-green-50 border-green-500 text-green-700"
-                          : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
-                      )}
-                    >
-                      <span className="text-2xl">💵</span>
-                      <span className="text-sm">เงินสด</span>
-                    </button>
-                    <button
-                      onClick={() => setPaymentMethod("QR")}
-                      className={cn(
-                        "flex flex-col items-center gap-1 py-3 rounded-xl font-medium transition-all cursor-pointer border-2",
-                        paymentMethod === "QR"
-                          ? "bg-blue-50 border-blue-500 text-blue-700"
-                          : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
-                      )}
-                    >
-                      <span className="text-2xl">📱</span>
-                      <span className="text-sm">QR Code</span>
-                    </button>
+                          : pm.value === "QR"
+                            ? "bg-blue-50 border-blue-500 text-blue-700"
+                            : "bg-rose-50 border-rose-500 text-rose-700";
+                      return (
+                        <button
+                          key={pm.value}
+                          onClick={() => setPaymentMethod(pm.value)}
+                          className={cn(
+                            "flex flex-col items-center justify-center gap-1 py-3 px-1 rounded-xl font-medium transition-all cursor-pointer border-2 text-center",
+                            active
+                              ? activeClass
+                              : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
+                          )}
+                        >
+                          <span className="text-2xl">{pm.emoji}</span>
+                          <span className="text-xs leading-tight">{pm.label}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 

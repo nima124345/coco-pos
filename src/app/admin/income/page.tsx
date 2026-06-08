@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate, paymentMethodMeta } from "@/lib/utils";
 import { apiFetch } from "@/lib/api";
 import { useAuthStore } from "@/store/auth";
 
@@ -63,6 +63,12 @@ export default function AdminIncomePage() {
     loadData();
   }, [loadData]);
 
+  const handleDelete = async (id: string, orderNumber: number) => {
+    if (!confirm(`ต้องการลบออเดอร์ #${orderNumber} ออกจากรายรับใช่หรือไม่?`)) return;
+    await apiFetch(`/api/orders?id=${id}`, { method: "DELETE" });
+    loadData();
+  };
+
   const totalIncome = orders.reduce((sum, o) => sum + o.netTotal, 0);
   const orderCount = orders.length;
   const cashIncome = orders
@@ -70,6 +76,9 @@ export default function AdminIncomePage() {
     .reduce((sum, o) => sum + o.netTotal, 0);
   const qrIncome = orders
     .filter((o) => o.paymentMethod === "QR")
+    .reduce((sum, o) => sum + o.netTotal, 0);
+  const thaiPlusIncome = orders
+    .filter((o) => o.paymentMethod === "THAI_PLUS")
     .reduce((sum, o) => sum + o.netTotal, 0);
   const avgPerOrder = orderCount > 0 ? totalIncome / orderCount : 0;
 
@@ -165,7 +174,7 @@ export default function AdminIncomePage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
         <Card>
           <CardContent className="pt-6">
             <p className="text-xs text-slate-500 mb-1">รวมทั้งเดือน</p>
@@ -184,9 +193,17 @@ export default function AdminIncomePage() {
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <p className="text-xs text-slate-500 mb-1">QR / โอน</p>
+            <p className="text-xs text-slate-500 mb-1">เงินโอน</p>
             <p className="text-2xl font-bold text-slate-900">
               {formatCurrency(qrIncome)}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-xs text-slate-500 mb-1">ไทยช่วยไทยพลัส</p>
+            <p className="text-2xl font-bold text-slate-900">
+              {formatCurrency(thaiPlusIncome)}
             </p>
           </CardContent>
         </Card>
@@ -235,7 +252,7 @@ export default function AdminIncomePage() {
               return (
                 <li
                   key={order.id}
-                  className="grid grid-cols-[5rem_8rem_1fr_auto] lg:grid-cols-[7rem_10rem_1fr_8rem] items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors"
+                  className="group grid grid-cols-[5rem_8rem_1fr_auto_2rem] lg:grid-cols-[7rem_10rem_1fr_8rem_3rem] items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors"
                 >
                   <span className="text-xs md:text-sm text-slate-500 tabular-nums">
                     {formatDate(order.createdAt)}
@@ -252,7 +269,7 @@ export default function AdminIncomePage() {
                       {order.customerName ? ` · ${order.customerName}` : ""}
                     </p>
                     <p className="text-xs text-slate-400 truncate">
-                      {order.paymentMethod === "QR" ? "QR / โอน" : "เงินสด"}
+                      {paymentMethodMeta(order.paymentMethod).label}
                       {order.staff?.name ? ` · ${order.staff.name}` : ""}
                       {order.discount > 0
                         ? ` · ส่วนลด ${formatCurrency(order.discount)}`
@@ -262,6 +279,17 @@ export default function AdminIncomePage() {
                   <span className="text-right font-bold text-green-600 tabular-nums whitespace-nowrap">
                     +{formatCurrency(order.netTotal)}
                   </span>
+                  <button
+                    onClick={() => handleDelete(order.id, order.orderNumber)}
+                    aria-label="ลบออเดอร์"
+                    className="justify-self-end w-8 h-8 rounded-lg text-slate-300 hover:text-red-600 hover:bg-red-50 cursor-pointer flex items-center justify-center opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 6h18" />
+                      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                    </svg>
+                  </button>
                 </li>
               );
             })}

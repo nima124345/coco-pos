@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate, paymentMethodMeta } from "@/lib/utils";
 import { apiFetch } from "@/lib/api";
 import { useAuthStore } from "@/store/auth";
 
@@ -493,7 +493,10 @@ export default function AdminCustomersPage() {
                           : "🏪 หน้าร้าน"}
                       </span>
                       <span>·</span>
-                      <span>{order.paymentMethod === "CASH" ? "💵 เงินสด" : "📱 QR"}</span>
+                      <span>
+                        {paymentMethodMeta(order.paymentMethod).emoji}{" "}
+                        {paymentMethodMeta(order.paymentMethod).label}
+                      </span>
                       {(order.branch || order.boothEvent) && (
                         <>
                           <span>·</span>

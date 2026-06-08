@@ -63,6 +63,9 @@ export async function GET(req: NextRequest) {
   const qrSales = orders
     .filter((o) => o.paymentMethod === "QR")
     .reduce((sum, o) => sum + o.netTotal, 0);
+  const thaiPlusSales = orders
+    .filter((o) => o.paymentMethod === "THAI_PLUS")
+    .reduce((sum, o) => sum + o.netTotal, 0);
   const dineInSales = orders
     .filter((o) => o.channel === "DINE_IN")
     .reduce((sum, o) => sum + o.netTotal, 0);
@@ -186,6 +189,7 @@ export async function GET(req: NextRequest) {
     stockItemCount,
     cashSales,
     qrSales,
+    thaiPlusSales,
     dineInSales,
     deliverySales,
     shopeeSales,

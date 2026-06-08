@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { formatCurrency, formatDate, cn } from "@/lib/utils";
+import { formatCurrency, formatDate, cn, paymentMethodMeta } from "@/lib/utils";
 
 interface OrderTopping {
   toppingName: string;
@@ -137,7 +137,8 @@ export default function StaffOrdersPage() {
                       {order.status === "COMPLETED" ? "สำเร็จ" : "ยกเลิก"}
                     </Badge>
                     <Badge variant="outline">
-                      {order.paymentMethod === "CASH" ? "💵 เงินสด" : "📱 QR"}
+                      {paymentMethodMeta(order.paymentMethod).emoji}{" "}
+                      {paymentMethodMeta(order.paymentMethod).label}
                     </Badge>
                   </div>
                 </div>

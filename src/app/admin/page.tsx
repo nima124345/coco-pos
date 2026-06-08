@@ -28,6 +28,7 @@ interface DashboardData {
   stockItemCount: number;
   cashSales: number;
   qrSales: number;
+  thaiPlusSales: number;
   dineInSales: number;
   deliverySales: number;
   shopeeSales: number;
@@ -112,7 +113,7 @@ export default function AdminDashboard() {
   );
 
   const totalPaymentSum = useMemo(
-    () => (data ? data.cashSales + data.qrSales : 0),
+    () => (data ? data.cashSales + data.qrSales + data.thaiPlusSales : 0),
     [data]
   );
 
@@ -587,10 +588,17 @@ export default function AdminDashboard() {
               />
               <PaymentRow
                 icon="📱"
-                label="QR Code"
+                label="เงินโอน"
                 value={data.qrSales}
                 total={totalPaymentSum}
                 color="bg-blue-500"
+              />
+              <PaymentRow
+                icon="🇹🇭"
+                label="ไทยช่วยไทยพลัส"
+                value={data.thaiPlusSales}
+                total={totalPaymentSum}
+                color="bg-rose-500"
               />
             </div>
           </div>

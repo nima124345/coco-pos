@@ -53,6 +53,28 @@ export async function GET(req: NextRequest) {
   return NextResponse.json(orders);
 }
 
+export async function DELETE(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const id = searchParams.get("id");
+  if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+
+  const items = await prisma.orderItem.findMany({
+    where: { orderId: id },
+    select: { id: true },
+  });
+  const itemIds = items.map((i) => i.id);
+
+  await prisma.$transaction([
+    prisma.orderItemTopping.deleteMany({
+      where: { orderItemId: { in: itemIds } },
+    }),
+    prisma.orderItem.deleteMany({ where: { orderId: id } }),
+    prisma.order.delete({ where: { id } }),
+  ]);
+
+  return NextResponse.json({ success: true });
+}
+
 export async function POST(req: NextRequest) {
   const body = await req.json();
   const ctx = getContext(req);
