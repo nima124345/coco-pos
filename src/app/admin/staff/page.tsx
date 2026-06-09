@@ -12,8 +12,6 @@ import {
   type PermissionMap,
 } from "@/lib/permissions";
 import { useMenuAccess } from "@/hooks/usePermission";
-import ReadOnlyBanner from "@/components/ReadOnlyBanner";
-
 interface TodayShift {
   id: string;
   openedAt: string;
@@ -297,9 +295,7 @@ export default function AdminStaffPage() {
   );
 
   return (
-    <div className="p-6 lg:p-8 space-y-6 max-w-[1600px] mx-auto">
-      {!canEdit && <ReadOnlyBanner />}
-      <header className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+    <div className="p-6 lg:p-8 space-y-6 max-w-[1600px] mx-auto">      <header className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">จัดการพนักงาน</h1>
           <p className="text-slate-500 mt-1">

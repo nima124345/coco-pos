@@ -8,8 +8,6 @@ import { formatCurrency, formatDate, paymentMethodMeta } from "@/lib/utils";
 import { apiFetch } from "@/lib/api";
 import { useAuthStore } from "@/store/auth";
 import { useMenuAccess } from "@/hooks/usePermission";
-import ReadOnlyBanner from "@/components/ReadOnlyBanner";
-
 interface IncomeOrder {
   id: string;
   orderNumber: number;
@@ -125,9 +123,7 @@ export default function AdminIncomePage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      {!canEdit && <ReadOnlyBanner />}
-      <div className="flex items-center justify-between flex-wrap gap-3">
+    <div className="p-6 space-y-6">      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">

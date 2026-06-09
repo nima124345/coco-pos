@@ -7,8 +7,6 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils";
 import { useMenuAccess } from "@/hooks/usePermission";
-import ReadOnlyBanner from "@/components/ReadOnlyBanner";
-
 interface Promotion {
   id: string;
   name: string;
@@ -74,9 +72,7 @@ export default function AdminPromotionsPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      {!canEdit && <ReadOnlyBanner />}
-      <h1 className="text-2xl font-bold">จัดการโปรโมชั่น</h1>
+    <div className="p-6 space-y-6">      <h1 className="text-2xl font-bold">จัดการโปรโมชั่น</h1>
 
       {canEdit && (
         <div className="flex justify-end">

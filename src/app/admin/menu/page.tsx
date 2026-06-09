@@ -7,8 +7,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils";
 import { useMenuAccess } from "@/hooks/usePermission";
-import ReadOnlyBanner from "@/components/ReadOnlyBanner";
-
 interface Category {
   id: string;
   name: string;
@@ -192,9 +190,7 @@ export default function AdminMenuPage() {
   );
 
   return (
-    <div className="p-6 space-y-6">
-      {!canEdit && <ReadOnlyBanner />}
-      <h1 className="text-2xl font-bold">จัดการเมนูและท็อปปิ้ง</h1>
+    <div className="p-6 space-y-6">      <h1 className="text-2xl font-bold">จัดการเมนูและท็อปปิ้ง</h1>
 
       {/* Tab Navigation + Add Button */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
