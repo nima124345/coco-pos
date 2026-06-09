@@ -43,6 +43,8 @@ export async function GET(req: NextRequest) {
       openedAt: r.clockIn,
       closedAt: r.clockOut,
       durationMinutes: Math.round(minutes),
+      clockInPhoto: r.clockInPhoto,
+      clockOutPhoto: r.clockOutPhoto,
     };
   });
 

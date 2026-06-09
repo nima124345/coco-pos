@@ -172,18 +172,67 @@ export async function PUT(req: NextRequest) {
     }
   }
 
-  const user = await prisma.user.update({
-    where: { id },
-    data,
-    select: {
-      id: true,
-      name: true,
-      username: true,
-      role: true,
-      active: true,
-      createdAt: true,
-    },
-  });
+  try {
+    const user = await prisma.user.update({
+      where: { id },
+      data,
+      select: {
+        id: true,
+        name: true,
+        username: true,
+        role: true,
+        active: true,
+        createdAt: true,
+      },
+    });
+    return NextResponse.json(user);
+  } catch (e) {
+    const msg = (e as Error).message?.toLowerCase() ?? "";
+    if (msg.includes("unique") && msg.includes("username")) {
+      return NextResponse.json(
+        { error: "Username นี้ถูกใช้แล้ว" },
+        { status: 400 }
+      );
+    }
+    throw e;
+  }
+}
 
-  return NextResponse.json(user);
+export async function DELETE(req: NextRequest) {
+  const auth = await requireAdmin(req);
+  if (auth instanceof NextResponse) return auth;
+
+  const { searchParams } = new URL(req.url);
+  const id = searchParams.get("id");
+  if (!id) {
+    return NextResponse.json({ error: "ต้องระบุ id" }, { status: 400 });
+  }
+  if (id === auth.uid) {
+    return NextResponse.json(
+      { error: "ไม่สามารถลบบัญชีของตัวเองได้" },
+      { status: 400 }
+    );
+  }
+
+  // Orders/shifts are financial records — never delete a staff who has them.
+  const [orderCount, shiftCount] = await Promise.all([
+    prisma.order.count({ where: { staffId: id } }),
+    prisma.shift.count({ where: { staffId: id } }),
+  ]);
+  if (orderCount > 0 || shiftCount > 0) {
+    return NextResponse.json(
+      {
+        error:
+          "พนักงานนี้มีประวัติการขาย/กะการทำงาน ไม่สามารถลบได้ กรุณาปิดการใช้งานแทน",
+      },
+      { status: 400 }
+    );
+  }
+
+  // Safe to remove: clear the staff's own attendance (RESTRICT), branches cascade.
+  await ensureAttendanceTable();
+  await prisma.attendance.deleteMany({ where: { staffId: id } });
+  await prisma.user.delete({ where: { id } });
+
+  return NextResponse.json({ ok: true });
 }

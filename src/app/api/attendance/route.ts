@@ -61,6 +61,10 @@ export async function POST(req: NextRequest) {
   if (auth instanceof NextResponse) return auth;
   await ensureAttendanceTable();
 
+  const body = await req.json().catch(() => ({}));
+  const clockInPhoto: string =
+    typeof body.photo === "string" ? body.photo : "";
+
   const existingOpen = await prisma.attendance.findFirst({
     where: { staffId: auth.uid, status: "OPEN" },
   });
@@ -72,7 +76,7 @@ export async function POST(req: NextRequest) {
   }
 
   const record = await prisma.attendance.create({
-    data: { staffId: auth.uid },
+    data: { staffId: auth.uid, clockInPhoto },
   });
 
   return NextResponse.json(record);
@@ -82,6 +86,10 @@ export async function PUT(req: NextRequest) {
   const auth = await requireAuth(req);
   if (auth instanceof NextResponse) return auth;
   await ensureAttendanceTable();
+
+  const body = await req.json().catch(() => ({}));
+  const clockOutPhoto: string =
+    typeof body.photo === "string" ? body.photo : "";
 
   const open = await prisma.attendance.findFirst({
     where: { staffId: auth.uid, status: "OPEN" },
@@ -96,7 +104,7 @@ export async function PUT(req: NextRequest) {
 
   const updated = await prisma.attendance.update({
     where: { id: open.id },
-    data: { status: "CLOSED", clockOut: new Date() },
+    data: { status: "CLOSED", clockOut: new Date(), clockOutPhoto },
   });
 
   return NextResponse.json(updated);

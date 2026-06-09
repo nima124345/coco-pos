@@ -11,6 +11,8 @@ import {
   type PermissionLevel,
   type PermissionMap,
 } from "@/lib/permissions";
+import { useMenuAccess } from "@/hooks/usePermission";
+import ReadOnlyBanner from "@/components/ReadOnlyBanner";
 
 interface TodayShift {
   id: string;
@@ -51,6 +53,8 @@ interface AttendanceRecord {
   openedAt: string;
   closedAt: string | null;
   durationMinutes: number;
+  clockInPhoto: string;
+  clockOutPhoto: string;
 }
 
 function formatTime(iso: string | null) {
@@ -76,6 +80,7 @@ function formatHours(minutes: number) {
 }
 
 export default function AdminStaffPage() {
+  const { canEdit } = useMenuAccess();
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [branchOptions, setBranchOptions] = useState<BranchOption[]>([]);
@@ -89,10 +94,18 @@ export default function AdminStaffPage() {
   const [editBranchIds, setEditBranchIds] = useState<string[]>([]);
   const [editingPermStaff, setEditingPermStaff] = useState<Staff | null>(null);
   const [editPerms, setEditPerms] = useState<PermissionMap>({});
+  const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editUsername, setEditUsername] = useState("");
+  const [editRole, setEditRole] = useState("STAFF");
+  const [editPassword, setEditPassword] = useState("");
+  const [editStaffPerms, setEditStaffPerms] = useState<PermissionMap>({});
+  const [editError, setEditError] = useState("");
   const [error, setError] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
   const [historyDays, setHistoryDays] = useState(7);
   const [historyStaffId, setHistoryStaffId] = useState<string>("");
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async () => {
@@ -211,6 +224,60 @@ export default function AdminStaffPage() {
     loadData();
   };
 
+  const openEditStaff = (s: Staff) => {
+    setEditingStaff(s);
+    setEditName(s.name);
+    setEditUsername(s.username);
+    setEditRole(s.role);
+    setEditPassword("");
+    setEditStaffPerms(s.permissions || {});
+    setEditError("");
+  };
+
+  const saveEditStaff = async () => {
+    if (!editingStaff) return;
+    if (!editName.trim() || !editUsername.trim()) {
+      setEditError("กรุณากรอกชื่อและ Username");
+      return;
+    }
+    const body: Record<string, unknown> = {
+      id: editingStaff.id,
+      name: editName.trim(),
+      username: editUsername.trim(),
+      role: editRole,
+      permissions: editRole === "MANAGER" ? editStaffPerms : {},
+    };
+    if (editPassword) body.password = editPassword;
+    const res = await fetch("/api/staff", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      setEditError(d.error || "บันทึกไม่สำเร็จ");
+      return;
+    }
+    setEditingStaff(null);
+    loadData();
+  };
+
+  const handleDeleteStaff = async (s: Staff) => {
+    if (
+      !confirm(
+        `ต้องการลบพนักงาน "${s.name}" ใช่หรือไม่?\nประวัติการลงเวลาของพนักงานนี้จะถูกลบด้วย`
+      )
+    )
+      return;
+    const res = await fetch(`/api/staff?id=${s.id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      alert(d.error || "ลบไม่สำเร็จ");
+      return;
+    }
+    loadData();
+  };
+
   const stats = useMemo(() => {
     const total = staffList.length;
     const working = staffList.filter(
@@ -231,6 +298,7 @@ export default function AdminStaffPage() {
 
   return (
     <div className="p-6 lg:p-8 space-y-6 max-w-[1600px] mx-auto">
+      {!canEdit && <ReadOnlyBanner />}
       <header className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">จัดการพนักงาน</h1>
@@ -238,12 +306,14 @@ export default function AdminStaffPage() {
             ดูสถานะการเข้า–ออกงานและจัดการรายชื่อพนักงาน
           </p>
         </div>
-        <Button
-          onClick={() => setShowAddForm((v) => !v)}
-          className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-md shadow-green-500/30"
-        >
-          {showAddForm ? "× ปิดฟอร์ม" : "+ เพิ่มพนักงาน"}
-        </Button>
+        {canEdit && (
+          <Button
+            onClick={() => setShowAddForm((v) => !v)}
+            className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-md shadow-green-500/30"
+          >
+            {showAddForm ? "× ปิดฟอร์ม" : "+ เพิ่มพนักงาน"}
+          </Button>
+        )}
       </header>
 
       <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -267,7 +337,7 @@ export default function AdminStaffPage() {
         />
       </section>
 
-      {showAddForm && (
+      {showAddForm && canEdit && (
         <Card>
           <CardHeader>
             <CardTitle className="text-slate-900">เพิ่มพนักงานใหม่</CardTitle>
@@ -459,7 +529,7 @@ export default function AdminStaffPage() {
                             ? "Manager"
                             : "Staff"}
                         </Badge>
-                        {s.role === "MANAGER" && (
+                        {s.role === "MANAGER" && canEdit && (
                           <button
                             onClick={() => openPermEditor(s)}
                             className="text-[11px] text-blue-500 hover:text-blue-700 cursor-pointer"
@@ -488,13 +558,15 @@ export default function AdminStaffPage() {
                             </span>
                           ))
                         )}
-                        <button
-                          onClick={() => openBranchEditor(s)}
-                          className="text-[11px] text-blue-500 hover:text-blue-700 cursor-pointer"
-                          title="แก้ไขสาขา"
-                        >
-                          แก้
-                        </button>
+                        {canEdit && (
+                          <button
+                            onClick={() => openBranchEditor(s)}
+                            className="text-[11px] text-blue-500 hover:text-blue-700 cursor-pointer"
+                            title="แก้ไขสาขา"
+                          >
+                            แก้
+                          </button>
+                        )}
                       </div>
                     </td>
                     <td className="p-3 text-center">
@@ -528,17 +600,35 @@ export default function AdminStaffPage() {
                         {formatHours(s.weekMinutes)}
                       </span>
                     </td>
-                    <td className="p-3 text-center">
-                      <button
-                        onClick={() => toggleActive(s)}
-                        className={`text-xs font-medium px-3 py-1.5 rounded-lg cursor-pointer transition-colors ${
-                          s.active
-                            ? "text-red-500 hover:bg-red-50"
-                            : "text-green-600 hover:bg-green-50"
-                        }`}
-                      >
-                        {s.active ? "ปิดการใช้งาน" : "เปิดการใช้งาน"}
-                      </button>
+                    <td className="p-3">
+                      {canEdit ? (
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            onClick={() => openEditStaff(s)}
+                            className="text-xs font-medium px-3 py-1.5 rounded-lg cursor-pointer text-blue-600 hover:bg-blue-50 transition-colors"
+                          >
+                            แก้ไข
+                          </button>
+                          <button
+                            onClick={() => toggleActive(s)}
+                            className={`text-xs font-medium px-3 py-1.5 rounded-lg cursor-pointer transition-colors ${
+                              s.active
+                                ? "text-amber-600 hover:bg-amber-50"
+                                : "text-green-600 hover:bg-green-50"
+                            }`}
+                          >
+                            {s.active ? "ปิด" : "เปิด"}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteStaff(s)}
+                            className="text-xs font-medium px-3 py-1.5 rounded-lg cursor-pointer text-red-500 hover:bg-red-50 transition-colors"
+                          >
+                            ลบ
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="text-center text-xs text-slate-400">—</div>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -623,6 +713,9 @@ export default function AdminStaffPage() {
                   <th className="text-center p-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">
                     สถานะ
                   </th>
+                  <th className="text-center p-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    รูป (เข้า / ออก)
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -673,12 +766,26 @@ export default function AdminStaffPage() {
                         {r.status === "OPEN" ? "เปิดอยู่" : "ปิดแล้ว"}
                       </Badge>
                     </td>
+                    <td className="p-3">
+                      <div className="flex items-center justify-center gap-2">
+                        <AttendancePhoto
+                          url={r.clockInPhoto}
+                          label="เข้า"
+                          onClick={setPhotoPreview}
+                        />
+                        <AttendancePhoto
+                          url={r.clockOutPhoto}
+                          label="ออก"
+                          onClick={setPhotoPreview}
+                        />
+                      </div>
+                    </td>
                   </tr>
                 ))}
                 {attendance.length === 0 && (
                   <tr>
                     <td
-                      colSpan={6}
+                      colSpan={7}
                       className="p-8 text-center text-slate-400"
                     >
                       ไม่มีบันทึกการเข้างานในช่วงเวลานี้
@@ -771,7 +878,146 @@ export default function AdminStaffPage() {
           </div>
         </div>
       )}
+
+      {editingStaff && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+            onClick={() => setEditingStaff(null)}
+          />
+          <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-bold text-slate-900 mb-4">
+              แก้ไขพนักงาน
+            </h3>
+            <div className="space-y-3">
+              <div>
+                <label className="text-sm font-medium text-slate-700">
+                  ชื่อ-นามสกุล
+                </label>
+                <Input
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="mt-1.5"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700">
+                  Username
+                </label>
+                <Input
+                  value={editUsername}
+                  onChange={(e) => setEditUsername(e.target.value)}
+                  className="mt-1.5"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700">
+                  รหัสผ่านใหม่ (เว้นว่างไว้ถ้าไม่เปลี่ยน)
+                </label>
+                <Input
+                  type="password"
+                  placeholder="••••••"
+                  value={editPassword}
+                  onChange={(e) => setEditPassword(e.target.value)}
+                  className="mt-1.5"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700">
+                  ตำแหน่ง
+                </label>
+                <select
+                  value={editRole}
+                  onChange={(e) => setEditRole(e.target.value)}
+                  className="mt-1.5 w-full h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900"
+                >
+                  <option value="STAFF">พนักงาน (Staff)</option>
+                  <option value="MANAGER">ผู้จัดการ (Manager)</option>
+                  <option value="ADMIN">แอดมิน (Admin)</option>
+                </select>
+              </div>
+              {editRole === "MANAGER" && (
+                <div>
+                  <label className="text-sm font-medium text-slate-700 block mb-1.5">
+                    สิทธิ์การเข้าถึงเมนู
+                  </label>
+                  <PermissionMatrix
+                    value={editStaffPerms}
+                    onChange={setEditStaffPerms}
+                  />
+                </div>
+              )}
+            </div>
+            {editError && (
+              <p className="text-red-500 text-sm mt-3">{editError}</p>
+            )}
+            <div className="flex gap-2 mt-5">
+              <Button
+                onClick={saveEditStaff}
+                className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white"
+              >
+                บันทึก
+              </Button>
+              <Button variant="ghost" onClick={() => setEditingStaff(null)}>
+                ยกเลิก
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {photoPreview && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          onClick={() => setPhotoPreview(null)}
+        >
+          <div className="absolute inset-0 bg-slate-900/70 backdrop-blur-sm" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={photoPreview}
+            alt="รูปการลงเวลา"
+            className="relative max-h-[85vh] max-w-[90vw] rounded-2xl shadow-2xl object-contain"
+          />
+        </div>
+      )}
     </div>
+  );
+}
+
+function AttendancePhoto({
+  url,
+  label,
+  onClick,
+}: {
+  url: string;
+  label: string;
+  onClick: (url: string) => void;
+}) {
+  if (!url) {
+    return (
+      <div className="flex flex-col items-center gap-0.5">
+        <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-300 text-xs">
+          —
+        </div>
+        <span className="text-[9px] text-slate-400">{label}</span>
+      </div>
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={() => onClick(url)}
+      className="flex flex-col items-center gap-0.5 cursor-pointer group"
+      title={`ดูรูป${label}งาน`}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={url}
+        alt={`รูป${label}งาน`}
+        className="w-10 h-10 rounded-lg object-cover ring-1 ring-slate-200 group-hover:ring-green-400 transition-all"
+      />
+      <span className="text-[9px] text-slate-400">{label}</span>
+    </button>
   );
 }
 

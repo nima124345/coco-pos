@@ -6,6 +6,7 @@ import { apiFetch } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import CameraCapture from "@/components/CameraCapture";
 
 interface CurrentRecord {
   id: string;
@@ -52,6 +53,8 @@ export default function StaffTimeclockPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [now, setNow] = useState<Date | null>(null);
+  // Which clock action is awaiting a photo capture (null = camera closed).
+  const [cameraMode, setCameraMode] = useState<null | "in" | "out">(null);
 
   // Live clock — ticks every second once mounted (avoids hydration mismatch).
   useEffect(() => {
@@ -74,28 +77,37 @@ export default function StaffTimeclockPage() {
     loadData();
   }, [loadData]);
 
-  const handleClockIn = async () => {
+  // Upload the captured photo, then clock in/out with its URL.
+  const handleCapture = async (file: File) => {
     setSubmitting(true);
     setError("");
-    const res = await apiFetch("/api/attendance", { method: "POST" });
-    if (!res.ok) {
-      const d = await res.json().catch(() => ({}));
-      setError(d.error || "เข้างานไม่สำเร็จ");
-    }
-    setSubmitting(false);
-    loadData();
-  };
+    try {
+      let photo = "";
+      const fd = new FormData();
+      fd.append("file", file);
+      const up = await fetch("/api/upload", { method: "POST", body: fd });
+      if (up.ok) {
+        const d = await up.json().catch(() => ({}));
+        photo = d.url || "";
+      }
 
-  const handleClockOut = async () => {
-    setSubmitting(true);
-    setError("");
-    const res = await apiFetch("/api/attendance", { method: "PUT" });
-    if (!res.ok) {
-      const d = await res.json().catch(() => ({}));
-      setError(d.error || "ออกงานไม่สำเร็จ");
+      const method = cameraMode === "out" ? "PUT" : "POST";
+      const res = await apiFetch("/api/attendance", {
+        method,
+        body: JSON.stringify({ photo }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        setError(d.error || "บันทึกไม่สำเร็จ");
+      } else {
+        setCameraMode(null);
+      }
+    } catch {
+      setError("เกิดข้อผิดพลาด กรุณาลองใหม่");
+    } finally {
+      setSubmitting(false);
+      loadData();
     }
-    setSubmitting(false);
-    loadData();
   };
 
   // Live elapsed time while clocked in.
@@ -161,13 +173,13 @@ export default function StaffTimeclockPage() {
               </div>
             </div>
             <Button
-              onClick={handleClockOut}
+              onClick={() => setCameraMode("out")}
               disabled={submitting}
               variant="destructive"
               size="lg"
               className="w-full h-14 text-lg"
             >
-              {submitting ? "กำลังบันทึก…" : "🔴 ออกงาน"}
+              {submitting ? "กำลังบันทึก…" : "🔴 ออกงาน (ถ่ายรูป)"}
             </Button>
           </CardContent>
         </Card>
@@ -176,12 +188,12 @@ export default function StaffTimeclockPage() {
           <CardContent className="py-8 space-y-4 text-center">
             <p className="text-slate-500">คุณยังไม่ได้เข้างานวันนี้</p>
             <Button
-              onClick={handleClockIn}
+              onClick={() => setCameraMode("in")}
               disabled={submitting}
               size="lg"
               className="w-full h-14 text-lg bg-green-500 hover:bg-green-600 text-white"
             >
-              {submitting ? "กำลังบันทึก…" : "🟢 เข้างาน"}
+              {submitting ? "กำลังบันทึก…" : "🟢 เข้างาน (ถ่ายรูป)"}
             </Button>
           </CardContent>
         </Card>
@@ -236,6 +248,19 @@ export default function StaffTimeclockPage() {
           ))}
         </div>
       </div>
+
+      {cameraMode && (
+        <CameraCapture
+          title={cameraMode === "in" ? "ถ่ายรูปเข้างาน" : "ถ่ายรูปออกงาน"}
+          confirmLabel={cameraMode === "in" ? "ยืนยันเข้างาน" : "ยืนยันออกงาน"}
+          accent={cameraMode === "in" ? "green" : "red"}
+          busy={submitting}
+          onConfirm={handleCapture}
+          onCancel={() => {
+            if (!submitting) setCameraMode(null);
+          }}
+        />
+      )}
     </div>
   );
 }

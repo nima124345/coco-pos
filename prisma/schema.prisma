@@ -224,13 +224,15 @@ model Shift {
 // ==================== Attendance (time clock — independent of shifts) ====================
 // One row per work session: clock in -> clock out. NOT tied to a branch/booth.
 model Attendance {
-  id        String    @id @default(cuid())
-  staffId   String
-  clockIn   DateTime  @default(now())
-  clockOut  DateTime?
-  status    String    @default("OPEN") // OPEN | CLOSED
-  note      String    @default("")
-  createdAt DateTime  @default(now())
+  id            String    @id @default(cuid())
+  staffId       String
+  clockIn       DateTime  @default(now())
+  clockOut      DateTime?
+  status        String    @default("OPEN") // OPEN | CLOSED
+  note          String    @default("")
+  clockInPhoto  String    @default("") // photo URL captured at clock-in
+  clockOutPhoto String    @default("") // photo URL captured at clock-out
+  createdAt     DateTime  @default(now())
 
   staff User @relation(fields: [staffId], references: [id])
 
