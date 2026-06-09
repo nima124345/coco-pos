@@ -2,9 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { createSessionToken, setSessionCookie, Role } from "@/lib/session";
+import { ensurePermissionsColumn } from "@/lib/ensure-permissions";
+import { parsePermissions } from "@/lib/permissions";
 
 export async function POST(req: NextRequest) {
   try {
+  await ensurePermissionsColumn();
   const { username, password } = await req.json();
 
   if (!username || !password) {
@@ -45,7 +48,7 @@ export async function POST(req: NextRequest) {
       isDefault: ub.isDefault,
     }));
 
-  if (user.role === "ADMIN" && branches.length === 0) {
+  if ((user.role === "ADMIN" || user.role === "MANAGER") && branches.length === 0) {
     const all = await prisma.branch.findMany({
       where: { active: true },
       select: { id: true, name: true },
@@ -77,6 +80,7 @@ export async function POST(req: NextRequest) {
     name: user.name,
     username: user.username,
     role: user.role,
+    permissions: parsePermissions(user.permissions),
     branches,
     boothEvents,
   });

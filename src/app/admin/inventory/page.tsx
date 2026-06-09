@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils";
 import { apiFetch } from "@/lib/api";
 import { useAuthStore } from "@/store/auth";
+import { useMenuAccess } from "@/hooks/usePermission";
+import ReadOnlyBanner from "@/components/ReadOnlyBanner";
 
 interface InventoryItem {
   id: string;
@@ -20,6 +22,7 @@ interface InventoryItem {
 }
 
 export default function AdminInventoryPage() {
+  const { canEdit } = useMenuAccess();
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [name, setName] = useState("");
   const [unit, setUnit] = useState("ชิ้น");
@@ -104,6 +107,7 @@ export default function AdminInventoryPage() {
 
   return (
     <div className="p-6 space-y-6">
+      {!canEdit && <ReadOnlyBanner />}
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
           <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100 inline-block mb-2">
@@ -118,12 +122,14 @@ export default function AdminInventoryPage() {
               : "สต็อกของสาขานี้เท่านั้น"}
           </p>
         </div>
-        <Button
-          onClick={() => { setName(""); setUnit("ชิ้น"); setQuantity(""); setMinStock(""); setCostPrice(""); setShowModal(true); }}
-          className="h-10 px-5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-xl shadow-lg shadow-amber-500/30"
-        >
-          + เพิ่มวัตถุดิบ
-        </Button>
+        {canEdit && (
+          <Button
+            onClick={() => { setName(""); setUnit("ชิ้น"); setQuantity(""); setMinStock(""); setCostPrice(""); setShowModal(true); }}
+            className="h-10 px-5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-xl shadow-lg shadow-amber-500/30"
+          >
+            + เพิ่มวัตถุดิบ
+          </Button>
+        )}
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -184,13 +190,19 @@ export default function AdminInventoryPage() {
                     <p className="font-medium truncate">{item.name}</p>
                     <p className="lg:hidden text-xs text-slate-500 mt-0.5">
                       คงเหลือ <span className="font-semibold text-slate-700">{item.quantity} {item.unit}</span> · ขั้นต่ำ {item.minStock}
-                      {" · "}
-                      <button
-                        onClick={() => handleUpdatePrice(item)}
-                        className="text-blue-600 font-medium hover:underline cursor-pointer"
-                      >
-                        {formatCurrency(item.costPrice)}/{item.unit} ✎
-                      </button>
+                      {canEdit ? (
+                        <>
+                          {" · "}
+                          <button
+                            onClick={() => handleUpdatePrice(item)}
+                            className="text-blue-600 font-medium hover:underline cursor-pointer"
+                          >
+                            {formatCurrency(item.costPrice)}/{item.unit} ✎
+                          </button>
+                        </>
+                      ) : (
+                        <> · <span className="text-slate-600 font-medium">{formatCurrency(item.costPrice)}/{item.unit}</span></>
+                      )}
                     </p>
                   </div>
                   <span className="hidden lg:block text-center font-bold tabular-nums">
@@ -199,56 +211,64 @@ export default function AdminInventoryPage() {
                   <span className="hidden lg:block text-center text-sm text-slate-500 tabular-nums">
                     {item.minStock} <span className="text-xs text-slate-400">{item.unit}</span>
                   </span>
-                  <button
-                    onClick={() => handleUpdatePrice(item)}
-                    title="แก้ไขราคาต้นทุน"
-                    className="hidden lg:flex items-center justify-end gap-1 text-right text-sm tabular-nums text-slate-700 hover:text-blue-600 cursor-pointer group/price"
-                  >
-                    <span>
+                  {canEdit ? (
+                    <button
+                      onClick={() => handleUpdatePrice(item)}
+                      title="แก้ไขราคาต้นทุน"
+                      className="hidden lg:flex items-center justify-end gap-1 text-right text-sm tabular-nums text-slate-700 hover:text-blue-600 cursor-pointer group/price"
+                    >
+                      <span>
+                        {formatCurrency(item.costPrice)}<span className="text-xs text-slate-400">/{item.unit}</span>
+                      </span>
+                      <span className="text-slate-300 group-hover/price:text-blue-500">✎</span>
+                    </button>
+                  ) : (
+                    <span className="hidden lg:flex items-center justify-end text-right text-sm tabular-nums text-slate-700">
                       {formatCurrency(item.costPrice)}<span className="text-xs text-slate-400">/{item.unit}</span>
                     </span>
-                    <span className="text-slate-300 group-hover/price:text-blue-500">✎</span>
-                  </button>
+                  )}
                   <div className="hidden lg:flex justify-center">
                     <Badge variant={status.variant}>{status.label}</Badge>
                   </div>
-                  <div className="flex items-center justify-end gap-1">
-                    <button
-                      onClick={() => handleUpdateQty(item, Math.max(0, item.quantity - 1))}
-                      className="w-7 h-7 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 cursor-pointer flex items-center justify-center"
-                      aria-label="ลดจำนวน"
-                    >
-                      −
-                    </button>
-                    <button
-                      onClick={() => handleUpdateQty(item, item.quantity + 1)}
-                      className="w-7 h-7 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 cursor-pointer flex items-center justify-center"
-                      aria-label="เพิ่มจำนวน"
-                    >
-                      +
-                    </button>
-                    <button
-                      onClick={() => {
-                        const qty = prompt("ใส่จำนวนใหม่:");
-                        if (qty) handleUpdateQty(item, parseFloat(qty));
-                      }}
-                      className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 cursor-pointer flex items-center justify-center text-xs"
-                      aria-label="กำหนดจำนวน"
-                    >
-                      #
-                    </button>
-                    <button
-                      onClick={() => handleDelete(item)}
-                      aria-label="ลบวัตถุดิบ"
-                      className="w-7 h-7 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 cursor-pointer flex items-center justify-center opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity ml-1"
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M3 6h18" />
-                        <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                      </svg>
-                    </button>
-                  </div>
+                  {canEdit && (
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        onClick={() => handleUpdateQty(item, Math.max(0, item.quantity - 1))}
+                        className="w-7 h-7 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 cursor-pointer flex items-center justify-center"
+                        aria-label="ลดจำนวน"
+                      >
+                        −
+                      </button>
+                      <button
+                        onClick={() => handleUpdateQty(item, item.quantity + 1)}
+                        className="w-7 h-7 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 cursor-pointer flex items-center justify-center"
+                        aria-label="เพิ่มจำนวน"
+                      >
+                        +
+                      </button>
+                      <button
+                        onClick={() => {
+                          const qty = prompt("ใส่จำนวนใหม่:");
+                          if (qty) handleUpdateQty(item, parseFloat(qty));
+                        }}
+                        className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 cursor-pointer flex items-center justify-center text-xs"
+                        aria-label="กำหนดจำนวน"
+                      >
+                        #
+                      </button>
+                      <button
+                        onClick={() => handleDelete(item)}
+                        aria-label="ลบวัตถุดิบ"
+                        className="w-7 h-7 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 cursor-pointer flex items-center justify-center opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity ml-1"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M3 6h18" />
+                          <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
                 </li>
               );
             })}
@@ -256,7 +276,7 @@ export default function AdminInventoryPage() {
         )}
       </div>
 
-      {showModal && (
+      {canEdit && showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowModal(false)} />
           <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden">

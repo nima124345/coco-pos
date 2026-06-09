@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { apiFetch } from "@/lib/api";
 import { useAuthStore } from "@/store/auth";
+import { useMenuAccess } from "@/hooks/usePermission";
+import ReadOnlyBanner from "@/components/ReadOnlyBanner";
 
 interface OrderItem {
   id: string;
@@ -60,6 +62,7 @@ function channelLabel(channel: string) {
 }
 
 export default function AdminOrdersPage() {
+  const { canEdit } = useMenuAccess();
   const [orders, setOrders] = useState<Order[]>([]);
   const [filterDate, setFilterDate] = useState(
     new Date().toISOString().split("T")[0]
@@ -140,6 +143,7 @@ export default function AdminOrdersPage() {
 
   return (
     <div className="p-6 space-y-6">
+      {!canEdit && <ReadOnlyBanner />}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <div className="flex items-center gap-2 mb-1">

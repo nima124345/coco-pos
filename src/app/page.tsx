@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuthStore, AuthBranch, AuthBoothEvent } from "@/store/auth";
+import type { PermissionMap } from "@/lib/permissions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -26,7 +27,8 @@ interface LoginResponse {
   id: string;
   name: string;
   username: string;
-  role: "ADMIN" | "STAFF";
+  role: "ADMIN" | "MANAGER" | "STAFF";
+  permissions?: PermissionMap;
   branches: AuthBranch[];
   boothEvents: AuthBoothEvent[];
 }
@@ -83,15 +85,18 @@ export default function LoginPage() {
       name: data.name,
       username: data.username,
       role: data.role,
+      permissions: data.permissions,
     });
     setBranches(data.branches);
     setBoothEvents(data.boothEvents);
+    // ADMIN and MANAGER both use the admin panel; STAFF uses the staff app.
+    const usesAdminPanel = data.role === "ADMIN" || data.role === "MANAGER";
     if (mode === "BRANCH") {
       setBranchContext(contextId);
-      router.push(data.role === "ADMIN" ? "/admin" : "/staff");
+      router.push(usesAdminPanel ? "/admin" : "/staff");
     } else {
       setBoothContext(contextId);
-      router.push(data.role === "ADMIN" ? "/admin" : "/staff/booth-summary");
+      router.push(usesAdminPanel ? "/admin" : "/staff/booth-summary");
     }
   };
 

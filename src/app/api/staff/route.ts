@@ -3,17 +3,21 @@ import { prisma } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { requireAdmin } from "@/lib/session";
 import { ensureAttendanceTable } from "@/lib/ensure-attendance";
+import { ensurePermissionsColumn } from "@/lib/ensure-permissions";
+import { parsePermissions, serializePermissions } from "@/lib/permissions";
 
 export async function GET(req: NextRequest) {
   const auth = await requireAdmin(req);
   if (auth instanceof NextResponse) return auth;
 
+  await ensurePermissionsColumn();
   const users = await prisma.user.findMany({
     select: {
       id: true,
       name: true,
       username: true,
       role: true,
+      permissions: true,
       active: true,
       createdAt: true,
       branches: {
@@ -60,6 +64,7 @@ export async function GET(req: NextRequest) {
 
     return {
       ...u,
+      permissions: parsePermissions(u.permissions),
       branches: u.branches.map((b) => ({
         id: b.branch.id,
         name: b.branch.name,
@@ -84,6 +89,7 @@ export async function POST(req: NextRequest) {
   const auth = await requireAdmin(req);
   if (auth instanceof NextResponse) return auth;
 
+  await ensurePermissionsColumn();
   const body = await req.json();
   const hashedPassword = await bcrypt.hash(body.password, 10);
 
@@ -99,13 +105,18 @@ export async function POST(req: NextRequest) {
 
   const branchIds: string[] = Array.isArray(body.branchIds) ? body.branchIds : [];
   const defaultBranchId: string | null = body.defaultBranchId || branchIds[0] || null;
+  const role: string = body.role || "STAFF";
+  // Only MANAGER carries per-menu permissions; others store an empty string.
+  const permissions =
+    role === "MANAGER" ? serializePermissions(body.permissions || {}) : "";
 
   const user = await prisma.user.create({
     data: {
       name: body.name,
       username: body.username,
       password: hashedPassword,
-      role: body.role || "STAFF",
+      role,
+      permissions,
       branches: {
         create: branchIds.map((bid) => ({
           branchId: bid,
@@ -130,11 +141,21 @@ export async function PUT(req: NextRequest) {
   const auth = await requireAdmin(req);
   if (auth instanceof NextResponse) return auth;
 
+  await ensurePermissionsColumn();
   const body = await req.json();
-  const { id, password, branchIds, defaultBranchId, ...data } = body;
+  const { id, password, branchIds, defaultBranchId, permissions, ...data } = body;
 
   if (password) {
     data.password = await bcrypt.hash(password, 10);
+  }
+
+  // Permissions only apply to MANAGER. When a permissions map is supplied, store
+  // it (serialized); when the role is being set to non-MANAGER, clear it.
+  if (permissions !== undefined) {
+    data.permissions = serializePermissions(permissions || {});
+  }
+  if (data.role && data.role !== "MANAGER") {
+    data.permissions = "";
   }
 
   if (Array.isArray(branchIds)) {

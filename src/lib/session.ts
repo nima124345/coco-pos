@@ -13,7 +13,7 @@ export const SESSION_MAX_AGE = 60 * 60 * 24 * 30; // 30 days (seconds)
 
 const ALG = { name: "HMAC", hash: "SHA-256" } as const;
 
-export type Role = "ADMIN" | "STAFF";
+export type Role = "ADMIN" | "MANAGER" | "STAFF";
 
 export interface SessionPayload {
   uid: string;
@@ -109,8 +109,11 @@ export async function getSession(
 }
 
 /**
- * Guard for ADMIN-only route handlers. Returns the session when the caller is
- * an admin, otherwise a ready-to-return 401/403 response.
+ * Guard for admin-panel route handlers. Returns the session for ADMIN or
+ * MANAGER accounts, otherwise a ready-to-return 401/403 response.
+ *
+ * Per-menu access for MANAGER is enforced in the UI (sidebar/page gating); this
+ * guard only keeps plain STAFF out of admin-panel endpoints.
  */
 export async function requireAdmin(
   req: NextRequest
@@ -119,7 +122,7 @@ export async function requireAdmin(
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  if (session.role !== "ADMIN") {
+  if (session.role !== "ADMIN" && session.role !== "MANAGER") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   return session;

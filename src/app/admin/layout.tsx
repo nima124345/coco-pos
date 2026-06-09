@@ -7,18 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import BranchSwitcher from "@/components/BranchSwitcher";
-
-const adminNavItems = [
-  { href: "/admin", label: "แดชบอร์ด", icon: "📊" },
-  { href: "/admin/income", label: "รายรับ", icon: "💰" },
-  { href: "/admin/expenses", label: "รายจ่าย", icon: "💸" },
-  { href: "/admin/menu", label: "จัดการเมนู", icon: "🍹" },
-  { href: "/admin/staff", label: "พนักงาน", icon: "👥" },
-  { href: "/admin/promotions", label: "โปรโมชั่น", icon: "🏷️" },
-  { href: "/admin/inventory", label: "สต็อก", icon: "📦" },
-  { href: "/admin/orders", label: "ออเดอร์ทั้งหมด", icon: "📋" },
-  { href: "/admin/customers", label: "ลูกค้า", icon: "🧑‍💼" },
-];
+import { ADMIN_MENUS, canView, menuKeyForPath } from "@/lib/permissions";
 
 export default function AdminLayout({
   children,
@@ -44,22 +33,36 @@ export default function AdminLayout({
     }
   }, []);
 
+  const isAdminPanelUser = user?.role === "ADMIN" || user?.role === "MANAGER";
+
   useEffect(() => {
     if (!hydrated) return;
     if (!user) {
       router.push("/");
-    } else if (user.role !== "ADMIN") {
+    } else if (!isAdminPanelUser) {
       router.push("/staff");
     } else if (!hasContext) {
       router.push("/");
     }
-  }, [user, hasContext, router, hydrated]);
+  }, [user, hasContext, router, hydrated, isAdminPanelUser]);
 
   useEffect(() => {
     setDrawerOpen(false);
   }, [pathname]);
 
-  if (!hydrated || !user || user.role !== "ADMIN" || !hasContext) return null;
+  if (!hydrated || !user || !isAdminPanelUser || !hasContext) return null;
+
+  // Sidebar: ADMIN sees every menu; MANAGER sees only menus they can view.
+  const navItems = ADMIN_MENUS.filter((m) =>
+    user.role === "ADMIN" ? true : canView(user.role, user.permissions, m.key)
+  );
+
+  // Page gating: a MANAGER may only open mapped menus they can view. Unmapped
+  // admin pages (e.g. /admin/branches) are blocked for managers entirely.
+  const currentMenu = menuKeyForPath(pathname);
+  const pageBlocked =
+    user.role === "MANAGER" &&
+    (!currentMenu || !canView(user.role, user.permissions, currentMenu));
 
   return (
     <div className="min-h-screen md:flex md:h-screen md:overflow-hidden bg-slate-50">
@@ -147,7 +150,7 @@ export default function AdminLayout({
         </div>
 
         <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
-          {adminNavItems.map((item) => {
+          {navItems.map((item) => {
             const active = pathname === item.href;
             return (
               <Link
@@ -179,7 +182,9 @@ export default function AdminLayout({
               <p className="text-sm font-medium text-slate-900 truncate">
                 {user.name}
               </p>
-              <p className="text-xs text-slate-500">Administrator</p>
+              <p className="text-xs text-slate-500">
+                {user.role === "MANAGER" ? "Manager" : "Administrator"}
+              </p>
             </div>
           </div>
           <button
@@ -199,7 +204,25 @@ export default function AdminLayout({
         </div>
       </aside>
 
-      <main className="flex-1 overflow-y-auto min-w-0 md:h-screen">{children}</main>
+      <main className="flex-1 overflow-y-auto min-w-0 md:h-screen">
+        {pageBlocked ? (
+          <div className="flex h-full min-h-[60vh] items-center justify-center p-8">
+            <div className="text-center max-w-sm">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-3xl">
+                🔒
+              </div>
+              <h2 className="text-xl font-bold text-slate-900">
+                ไม่มีสิทธิ์เข้าถึงหน้านี้
+              </h2>
+              <p className="mt-1.5 text-sm text-slate-500">
+                บัญชีของคุณไม่ได้รับสิทธิ์ให้เข้าเมนูนี้ กรุณาติดต่อแอดมินหากต้องการสิทธิ์เพิ่มเติม
+              </p>
+            </div>
+          </div>
+        ) : (
+          children
+        )}
+      </main>
     </div>
   );
 }

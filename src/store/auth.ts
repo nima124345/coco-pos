@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import type { PermissionMap } from "@/lib/permissions";
 
 export interface AuthBranch {
   id: string;
@@ -20,7 +21,9 @@ interface AuthUser {
   id: string;
   name: string;
   username: string;
-  role: "ADMIN" | "STAFF";
+  role: "ADMIN" | "MANAGER" | "STAFF";
+  /** Per-menu access for MANAGER accounts; empty/undefined for ADMIN & STAFF. */
+  permissions?: PermissionMap;
 }
 
 interface AuthState {

@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils";
+import { useMenuAccess } from "@/hooks/usePermission";
+import ReadOnlyBanner from "@/components/ReadOnlyBanner";
 
 interface Category {
   id: string;
@@ -32,6 +34,7 @@ interface Topping {
 }
 
 export default function AdminMenuPage() {
+  const { canEdit } = useMenuAccess();
   const [items, setItems] = useState<MenuItem[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [toppings, setToppings] = useState<Topping[]>([]);
@@ -190,6 +193,7 @@ export default function AdminMenuPage() {
 
   return (
     <div className="p-6 space-y-6">
+      {!canEdit && <ReadOnlyBanner />}
       <h1 className="text-2xl font-bold">จัดการเมนูและท็อปปิ้ง</h1>
 
       {/* Tab Navigation + Add Button */}
@@ -213,7 +217,7 @@ export default function AdminMenuPage() {
             </button>
           ))}
         </div>
-        {tab === "menu" && (
+        {canEdit && tab === "menu" && (
           <Button
             onClick={() => { setEditingMenu(null); setMenuName(""); setMenuPrice(""); setMenuShopeePrice(""); setShopeePriceTouched(false); setMenuImage(""); setMenuImageFile(null); setShowMenuModal(true); }}
             className="h-12 px-6 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-2xl shadow-lg shadow-amber-500/30 text-base"
@@ -221,7 +225,7 @@ export default function AdminMenuPage() {
             + เพิ่มเมนูใหม่
           </Button>
         )}
-        {tab === "toppings" && (
+        {canEdit && tab === "toppings" && (
           <Button
             onClick={() => { setToppingName(""); setToppingPrice(""); setShowToppingModal(true); }}
             className="h-12 px-6 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-2xl shadow-lg shadow-amber-500/30 text-base"
@@ -229,7 +233,7 @@ export default function AdminMenuPage() {
             + เพิ่มท็อปปิ้ง
           </Button>
         )}
-        {tab === "categories" && (
+        {canEdit && tab === "categories" && (
           <Button
             onClick={() => { setCatName(""); setCatEmoji(""); setShowCategoryModal(true); }}
             className="h-12 px-6 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-2xl shadow-lg shadow-amber-500/30 text-base"
@@ -329,6 +333,7 @@ export default function AdminMenuPage() {
                       <div className="hidden lg:flex justify-center">
                         <Badge variant={item.active ? "success" : "destructive"}>{item.active ? "ขายอยู่" : "ปิด"}</Badge>
                       </div>
+                      {canEdit && (
                       <div className="flex items-center gap-1 justify-end opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                         <button
                           onClick={() => {
@@ -361,6 +366,7 @@ export default function AdminMenuPage() {
                           </svg>
                         </button>
                       </div>
+                      )}
                     </li>
                   );
                 })}
@@ -380,12 +386,14 @@ export default function AdminMenuPage() {
                   <p className="font-medium">{t.name}</p>
                   <p className="text-amber-600 font-bold">+{formatCurrency(t.price)}</p>
                 </div>
+                {canEdit && (
                 <button
                   onClick={async () => { if (!confirm('ยืนยันการลบท็อปปิ้งนี้?')) return; await fetch(`/api/menu/toppings?id=${t.id}`, { method: "DELETE" }); loadData(); }}
                   className="text-red-400 hover:text-red-600 text-sm cursor-pointer"
                 >
                   ลบ
                 </button>
+                )}
               </Card>
             ))}
           </div>

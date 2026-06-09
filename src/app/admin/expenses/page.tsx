@@ -8,6 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { apiFetch } from "@/lib/api";
 import { useAuthStore } from "@/store/auth";
+import { useMenuAccess } from "@/hooks/usePermission";
+import ReadOnlyBanner from "@/components/ReadOnlyBanner";
 
 interface ExpenseCategory {
   id: string;
@@ -25,6 +27,7 @@ interface Expense {
 }
 
 export default function AdminExpensesPage() {
+  const { canEdit } = useMenuAccess();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [categories, setCategories] = useState<ExpenseCategory[]>([]);
   const [title, setTitle] = useState("");
@@ -166,6 +169,7 @@ export default function AdminExpensesPage() {
 
   return (
     <div className="p-6 space-y-6">
+      {!canEdit && <ReadOnlyBanner />}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -214,12 +218,14 @@ export default function AdminExpensesPage() {
           <Button onClick={handleExportCSV} variant="outline">
             Export CSV
           </Button>
-          <Button
-            onClick={openAdd}
-            className="h-10 px-5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-xl shadow-lg shadow-amber-500/30"
-          >
-            + เพิ่มรายจ่าย
-          </Button>
+          {canEdit && (
+            <Button
+              onClick={openAdd}
+              className="h-10 px-5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-xl shadow-lg shadow-amber-500/30"
+            >
+              + เพิ่มรายจ่าย
+            </Button>
+          )}
         </div>
       </div>
 
@@ -308,6 +314,8 @@ export default function AdminExpensesPage() {
                   -{formatCurrency(expense.amount)}
                 </span>
                 <div className="justify-self-end flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                  {canEdit && (
+                  <>
                   <button
                     onClick={() => openEdit(expense)}
                     aria-label="แก้ไขรายการ"
@@ -329,6 +337,8 @@ export default function AdminExpensesPage() {
                       <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
                     </svg>
                   </button>
+                  </>
+                  )}
                 </div>
               </li>
             ))}
@@ -336,7 +346,7 @@ export default function AdminExpensesPage() {
         )}
       </div>
 
-      {showModal && (
+      {canEdit && showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"

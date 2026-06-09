@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils";
+import { useMenuAccess } from "@/hooks/usePermission";
+import ReadOnlyBanner from "@/components/ReadOnlyBanner";
 
 interface Promotion {
   id: string;
@@ -18,6 +20,7 @@ interface Promotion {
 }
 
 export default function AdminPromotionsPage() {
+  const { canEdit } = useMenuAccess();
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [name, setName] = useState("");
   const [type, setType] = useState("PERCENT");
@@ -72,16 +75,19 @@ export default function AdminPromotionsPage() {
 
   return (
     <div className="p-6 space-y-6">
+      {!canEdit && <ReadOnlyBanner />}
       <h1 className="text-2xl font-bold">จัดการโปรโมชั่น</h1>
 
-      <div className="flex justify-end">
-        <Button
-          onClick={() => { setName(""); setValue(""); setType("PERCENT"); setStartDate(""); setEndDate(""); setShowModal(true); }}
-          className="h-12 px-6 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-2xl shadow-lg shadow-amber-500/30 text-base"
-        >
-          + สร้างโปรโมชั่นใหม่
-        </Button>
-      </div>
+      {canEdit && (
+        <div className="flex justify-end">
+          <Button
+            onClick={() => { setName(""); setValue(""); setType("PERCENT"); setStartDate(""); setEndDate(""); setShowModal(true); }}
+            className="h-12 px-6 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-2xl shadow-lg shadow-amber-500/30 text-base"
+          >
+            + สร้างโปรโมชั่นใหม่
+          </Button>
+        </div>
+      )}
 
       <div className="space-y-3">
         {promotions.map((promo) => (
@@ -109,22 +115,24 @@ export default function AdminPromotionsPage() {
                   </p>
                 )}
               </div>
-              <div className="flex gap-2">
-                <Button
-                  onClick={() => toggleActive(promo)}
-                  variant={promo.active ? "outline" : "secondary"}
-                  size="sm"
-                >
-                  {promo.active ? "ปิด" : "เปิด"}
-                </Button>
-                <Button
-                  onClick={() => handleDelete(promo.id)}
-                  variant="destructive"
-                  size="sm"
-                >
-                  ลบ
-                </Button>
-              </div>
+              {canEdit && (
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => toggleActive(promo)}
+                    variant={promo.active ? "outline" : "secondary"}
+                    size="sm"
+                  >
+                    {promo.active ? "ปิด" : "เปิด"}
+                  </Button>
+                  <Button
+                    onClick={() => handleDelete(promo.id)}
+                    variant="destructive"
+                    size="sm"
+                  >
+                    ลบ
+                  </Button>
+                </div>
+              )}
             </div>
           </Card>
         ))}

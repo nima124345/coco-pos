@@ -5,6 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  ADMIN_MENUS,
+  PERMISSION_LABELS,
+  type PermissionLevel,
+  type PermissionMap,
+} from "@/lib/permissions";
 
 interface TodayShift {
   id: string;
@@ -24,6 +30,7 @@ interface Staff {
   name: string;
   username: string;
   role: string;
+  permissions: PermissionMap;
   active: boolean;
   createdAt: string;
   branches: BranchRef[];
@@ -76,9 +83,12 @@ export default function AdminStaffPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("STAFF");
+  const [permissions, setPermissions] = useState<PermissionMap>({});
   const [selectedBranchIds, setSelectedBranchIds] = useState<string[]>([]);
   const [editingBranchStaff, setEditingBranchStaff] = useState<Staff | null>(null);
   const [editBranchIds, setEditBranchIds] = useState<string[]>([]);
+  const [editingPermStaff, setEditingPermStaff] = useState<Staff | null>(null);
+  const [editPerms, setEditPerms] = useState<PermissionMap>({});
   const [error, setError] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
   const [historyDays, setHistoryDays] = useState(7);
@@ -123,6 +133,7 @@ export default function AdminStaffPage() {
         username,
         password,
         role,
+        permissions: role === "MANAGER" ? permissions : {},
         branchIds: selectedBranchIds,
         defaultBranchId: selectedBranchIds[0],
       }),
@@ -136,8 +147,29 @@ export default function AdminStaffPage() {
     setUsername("");
     setPassword("");
     setRole("STAFF");
+    setPermissions({});
     setSelectedBranchIds([]);
     setShowAddForm(false);
+    loadData();
+  };
+
+  const openPermEditor = (s: Staff) => {
+    setEditingPermStaff(s);
+    setEditPerms(s.permissions || {});
+  };
+
+  const savePermEdit = async () => {
+    if (!editingPermStaff) return;
+    await fetch("/api/staff", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: editingPermStaff.id,
+        permissions: editPerms,
+      }),
+    });
+    setEditingPermStaff(null);
+    setEditPerms({});
     loadData();
   };
 
@@ -286,11 +318,23 @@ export default function AdminStaffPage() {
                   className="mt-1.5 w-full h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900"
                 >
                   <option value="STAFF">พนักงาน (Staff)</option>
+                  <option value="MANAGER">ผู้จัดการ (Manager)</option>
                   <option value="ADMIN">แอดมิน (Admin)</option>
                 </select>
               </div>
             </div>
-            <div>
+            {role === "MANAGER" && (
+              <div className="mt-4">
+                <label className="text-sm font-medium text-slate-700 block mb-1.5">
+                  สิทธิ์การเข้าถึงเมนู (Manager)
+                </label>
+                <p className="text-xs text-slate-500 mb-2">
+                  กำหนดได้ว่าผู้จัดการคนนี้เข้าเมนูไหนได้ และทำได้แค่ดู หรือแก้ไขได้
+                </p>
+                <PermissionMatrix value={permissions} onChange={setPermissions} />
+              </div>
+            )}
+            <div className="mt-4">
               <label className="text-sm font-medium text-slate-700 block mb-1.5">
                 สาขาที่ทำงานได้ (เลือกได้หลายสาขา)
               </label>
@@ -399,11 +443,32 @@ export default function AdminStaffPage() {
                       </div>
                     </td>
                     <td className="p-3 text-center">
-                      <Badge
-                        variant={s.role === "ADMIN" ? "default" : "outline"}
-                      >
-                        {s.role === "ADMIN" ? "Admin" : "Staff"}
-                      </Badge>
+                      <div className="flex flex-col items-center gap-1">
+                        <Badge
+                          variant={
+                            s.role === "ADMIN"
+                              ? "default"
+                              : s.role === "MANAGER"
+                              ? "success"
+                              : "outline"
+                          }
+                        >
+                          {s.role === "ADMIN"
+                            ? "Admin"
+                            : s.role === "MANAGER"
+                            ? "Manager"
+                            : "Staff"}
+                        </Badge>
+                        {s.role === "MANAGER" && (
+                          <button
+                            onClick={() => openPermEditor(s)}
+                            className="text-[11px] text-blue-500 hover:text-blue-700 cursor-pointer"
+                            title="แก้ไขสิทธิ์การเข้าถึง"
+                          >
+                            แก้สิทธิ์
+                          </button>
+                        )}
+                      </div>
                     </td>
                     <td className="p-3">
                       <div className="flex flex-wrap gap-1 items-center">
@@ -677,6 +742,94 @@ export default function AdminStaffPage() {
           </div>
         </div>
       )}
+
+      {editingPermStaff && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+            onClick={() => setEditingPermStaff(null)}
+          />
+          <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-bold text-slate-900 mb-1">
+              สิทธิ์การเข้าถึงของ {editingPermStaff.name}
+            </h3>
+            <p className="text-sm text-slate-500 mb-4">
+              กำหนดว่าผู้จัดการคนนี้เข้าเมนูไหนได้ และทำได้แค่ดู หรือแก้ไขได้
+            </p>
+            <PermissionMatrix value={editPerms} onChange={setEditPerms} />
+            <div className="flex gap-2 mt-5">
+              <Button
+                onClick={savePermEdit}
+                className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white"
+              >
+                บันทึก
+              </Button>
+              <Button variant="ghost" onClick={() => setEditingPermStaff(null)}>
+                ยกเลิก
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const PERMISSION_OPTIONS: PermissionLevel[] = ["NONE", "VIEW", "EDIT"];
+
+function PermissionMatrix({
+  value,
+  onChange,
+}: {
+  value: PermissionMap;
+  onChange: (v: PermissionMap) => void;
+}) {
+  const setLevel = (key: string, level: PermissionLevel) => {
+    const next = { ...value };
+    if (level === "NONE") delete next[key as keyof PermissionMap];
+    else next[key as keyof PermissionMap] = level;
+    onChange(next);
+  };
+
+  return (
+    <div className="space-y-1.5">
+      {ADMIN_MENUS.map((m) => {
+        const current: PermissionLevel = value[m.key] ?? "NONE";
+        return (
+          <div
+            key={m.key}
+            className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 px-3 py-2"
+          >
+            <span className="flex items-center gap-2 text-sm font-medium text-slate-700">
+              <span className="text-base">{m.icon}</span>
+              {m.label}
+            </span>
+            <div className="flex gap-1 bg-slate-100 rounded-lg p-1">
+              {PERMISSION_OPTIONS.map((lvl) => {
+                const active = current === lvl;
+                return (
+                  <button
+                    key={lvl}
+                    type="button"
+                    onClick={() => setLevel(m.key, lvl)}
+                    className={`px-2.5 py-1 rounded-md text-xs font-medium cursor-pointer transition-all ${
+                      active
+                        ? lvl === "EDIT"
+                          ? "bg-green-500 text-white shadow-sm"
+                          : lvl === "VIEW"
+                          ? "bg-blue-500 text-white shadow-sm"
+                          : "bg-white text-slate-700 shadow-sm"
+                        : "text-slate-500 hover:text-slate-700"
+                    }`}
+                  >
+                    {PERMISSION_LABELS[lvl]}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

@@ -7,6 +7,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { formatCurrency, formatDate, paymentMethodMeta } from "@/lib/utils";
 import { apiFetch } from "@/lib/api";
 import { useAuthStore } from "@/store/auth";
+import { useMenuAccess } from "@/hooks/usePermission";
+import ReadOnlyBanner from "@/components/ReadOnlyBanner";
 
 interface IncomeOrder {
   id: string;
@@ -35,6 +37,7 @@ function channelMeta(channel: string) {
 }
 
 export default function AdminIncomePage() {
+  const { canEdit } = useMenuAccess();
   const [orders, setOrders] = useState<IncomeOrder[]>([]);
   const [scope, setScope] = useState<"current" | "all" | "all-branches" | "all-booths">("current");
   const [filterMonth, setFilterMonth] = useState(
@@ -123,6 +126,7 @@ export default function AdminIncomePage() {
 
   return (
     <div className="p-6 space-y-6">
+      {!canEdit && <ReadOnlyBanner />}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -279,17 +283,19 @@ export default function AdminIncomePage() {
                   <span className="text-right font-bold text-green-600 tabular-nums whitespace-nowrap">
                     +{formatCurrency(order.netTotal)}
                   </span>
-                  <button
-                    onClick={() => handleDelete(order.id, order.orderNumber)}
-                    aria-label="ลบออเดอร์"
-                    className="justify-self-end w-8 h-8 rounded-lg text-slate-300 hover:text-red-600 hover:bg-red-50 cursor-pointer flex items-center justify-center opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M3 6h18" />
-                      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                    </svg>
-                  </button>
+                  {canEdit && (
+                    <button
+                      onClick={() => handleDelete(order.id, order.orderNumber)}
+                      aria-label="ลบออเดอร์"
+                      className="justify-self-end w-8 h-8 rounded-lg text-slate-300 hover:text-red-600 hover:bg-red-50 cursor-pointer flex items-center justify-center opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M3 6h18" />
+                        <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                      </svg>
+                    </button>
+                  )}
                 </li>
               );
             })}
