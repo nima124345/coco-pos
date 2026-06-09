@@ -256,3 +256,18 @@ CREATE INDEX "Promotion_branchId_idx" ON "Promotion"("branchId");
 -- CreateIndex
 CREATE INDEX "InventoryItem_branchId_idx" ON "InventoryItem"("branchId");
 
+-- CreateTable
+CREATE TABLE "Attendance" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "staffId" TEXT NOT NULL,
+    "clockIn" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "clockOut" DATETIME,
+    "status" TEXT NOT NULL DEFAULT 'OPEN',
+    "note" TEXT NOT NULL DEFAULT '',
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "Attendance_staffId_fkey" FOREIGN KEY ("staffId") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+-- CreateIndex
+CREATE INDEX "Attendance_staffId_idx" ON "Attendance"("staffId");
+

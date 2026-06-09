@@ -11,6 +11,7 @@ import BranchSwitcher from "@/components/BranchSwitcher";
 const baseNavItems = [
   { href: "/staff", label: "สั่งซื้อ", icon: "🛒" },
   { href: "/staff/orders", label: "ประวัติ", icon: "📋" },
+  { href: "/staff/timeclock", label: "ลงเวลา", icon: "🕐" },
   { href: "/staff/shift", label: "กะการทำงาน", icon: "⏰" },
   { href: "/staff/expenses", label: "บันทึกรายจ่าย", icon: "💸" },
 ];

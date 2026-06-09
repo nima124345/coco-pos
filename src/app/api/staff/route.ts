@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { requireAdmin } from "@/lib/session";
+import { ensureAttendanceTable } from "@/lib/ensure-attendance";
 
 export async function GET(req: NextRequest) {
   const auth = await requireAdmin(req);
@@ -35,24 +36,26 @@ export async function GET(req: NextRequest) {
   weekStart.setDate(now.getDate() - 6);
   weekStart.setHours(0, 0, 0, 0);
 
-  const recentShifts = await prisma.shift.findMany({
+  // Attendance (time clock) drives the เข้างาน/ออกงาน/ชั่วโมง columns — not shifts.
+  await ensureAttendanceTable();
+  const recentAttendance = await prisma.attendance.findMany({
     where: {
       staffId: { in: users.map((u) => u.id) },
-      openedAt: { gte: weekStart },
+      clockIn: { gte: weekStart },
     },
-    orderBy: { openedAt: "desc" },
+    orderBy: { clockIn: "desc" },
   });
 
   const enriched = users.map((u) => {
-    const userShifts = recentShifts.filter((s) => s.staffId === u.id);
-    const todayShift = userShifts.find(
-      (s) => s.openedAt >= todayStart && s.openedAt <= todayEnd
+    const userRecords = recentAttendance.filter((a) => a.staffId === u.id);
+    const todayRecord = userRecords.find(
+      (a) => a.clockIn >= todayStart && a.clockIn <= todayEnd
     );
 
     let weekMinutes = 0;
-    for (const s of userShifts) {
-      const end = s.closedAt ?? now;
-      weekMinutes += Math.max(0, (end.getTime() - s.openedAt.getTime()) / 60000);
+    for (const a of userRecords) {
+      const end = a.clockOut ?? now;
+      weekMinutes += Math.max(0, (end.getTime() - a.clockIn.getTime()) / 60000);
     }
 
     return {
@@ -62,12 +65,12 @@ export async function GET(req: NextRequest) {
         name: b.branch.name,
         isDefault: b.isDefault,
       })),
-      todayShift: todayShift
+      todayShift: todayRecord
         ? {
-            id: todayShift.id,
-            openedAt: todayShift.openedAt,
-            closedAt: todayShift.closedAt,
-            status: todayShift.status,
+            id: todayRecord.id,
+            openedAt: todayRecord.clockIn,
+            closedAt: todayRecord.clockOut,
+            status: todayRecord.status,
           }
         : null,
       weekMinutes: Math.round(weekMinutes),

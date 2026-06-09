@@ -125,6 +125,20 @@ export async function requireAdmin(
   return session;
 }
 
+/**
+ * Guard for any authenticated route handler. Returns the session for any
+ * logged-in user (ADMIN or STAFF), otherwise a ready-to-return 401 response.
+ */
+export async function requireAuth(
+  req: NextRequest
+): Promise<SessionPayload | NextResponse> {
+  const session = await getSession(req);
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  return session;
+}
+
 /** Apply the session cookie to a response. */
 export function setSessionCookie(res: NextResponse, token: string): void {
   res.cookies.set(SESSION_COOKIE, token, {

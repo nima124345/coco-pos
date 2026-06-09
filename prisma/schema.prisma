@@ -60,9 +60,10 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  branches UserBranch[]
-  shifts   Shift[]
-  orders   Order[]
+  branches    UserBranch[]
+  shifts      Shift[]
+  orders      Order[]
+  attendances Attendance[]
 }
 
 model UserBranch {
@@ -216,6 +217,22 @@ model Shift {
 
   @@index([branchId])
   @@index([boothEventId])
+}
+
+// ==================== Attendance (time clock — independent of shifts) ====================
+// One row per work session: clock in -> clock out. NOT tied to a branch/booth.
+model Attendance {
+  id        String    @id @default(cuid())
+  staffId   String
+  clockIn   DateTime  @default(now())
+  clockOut  DateTime?
+  status    String    @default("OPEN") // OPEN | CLOSED
+  note      String    @default("")
+  createdAt DateTime  @default(now())
+
+  staff User @relation(fields: [staffId], references: [id])
+
+  @@index([staffId])
 }
 
 // ==================== Expenses ====================
