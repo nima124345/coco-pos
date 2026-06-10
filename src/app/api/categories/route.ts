@@ -69,3 +69,20 @@ export async function POST(req: NextRequest) {
   const category = await prisma.category.create({ data: body });
   return NextResponse.json(category);
 }
+
+export async function PUT(req: NextRequest) {
+  const body = await req.json();
+  const { id, ...data } = body;
+  const category = await prisma.category.update({ where: { id }, data });
+  return NextResponse.json(category);
+}
+
+export async function DELETE(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const id = searchParams.get("id");
+  if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+  // Soft-delete (consistent with menu items / toppings). The POS GET already
+  // filters to active categories, so this hides the category and its items.
+  await prisma.category.update({ where: { id }, data: { active: false } });
+  return NextResponse.json({ success: true });
+}

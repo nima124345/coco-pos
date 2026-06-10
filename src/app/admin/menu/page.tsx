@@ -56,6 +56,7 @@ export default function AdminMenuPage() {
   // Category form
   const [catName, setCatName] = useState("");
   const [catEmoji, setCatEmoji] = useState("");
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
 
   // Modals
   const [showMenuModal, setShowMenuModal] = useState(false);
@@ -169,14 +170,38 @@ export default function AdminMenuPage() {
 
   const handleAddCategory = async () => {
     if (!catName) return;
-    await fetch("/api/categories", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: catName, emoji: catEmoji || "🍹" }),
-    });
+    if (editingCategory) {
+      await fetch("/api/categories", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: editingCategory.id,
+          name: catName,
+          emoji: catEmoji || "🍹",
+        }),
+      });
+      setEditingCategory(null);
+    } else {
+      await fetch("/api/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: catName, emoji: catEmoji || "🍹" }),
+      });
+    }
     setCatName("");
     setCatEmoji("");
     setShowCategoryModal(false);
+    loadData();
+  };
+
+  const handleDeleteCategory = async (cat: Category) => {
+    const itemCount = items.filter((i) => i.categoryId === cat.id).length;
+    const warn =
+      itemCount > 0
+        ? `\n\n⚠️ หมวดนี้มีเมนู ${itemCount} รายการ — เมนูเหล่านี้จะถูกซ่อนจากหน้าขายด้วย`
+        : "";
+    if (!confirm(`ยืนยันการลบหมวดหมู่ "${cat.name}"?${warn}`)) return;
+    await fetch(`/api/categories?id=${cat.id}`, { method: "DELETE" });
     loadData();
   };
 
@@ -231,7 +256,7 @@ export default function AdminMenuPage() {
         )}
         {canEdit && tab === "categories" && (
           <Button
-            onClick={() => { setCatName(""); setCatEmoji(""); setShowCategoryModal(true); }}
+            onClick={() => { setEditingCategory(null); setCatName(""); setCatEmoji(""); setShowCategoryModal(true); }}
             className="h-12 px-6 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-2xl shadow-lg shadow-amber-500/30 text-base"
           >
             + เพิ่มหมวดหมู่
@@ -399,12 +424,45 @@ export default function AdminMenuPage() {
       {tab === "categories" && (
         <>
           <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
-            {categories.map((cat) => (
-              <Card key={cat.id} className="p-4 text-center">
-                <div className="text-3xl mb-2">{cat.emoji}</div>
-                <p className="font-medium">{cat.name}</p>
-              </Card>
-            ))}
+            {categories.map((cat) => {
+              const itemCount = items.filter((i) => i.categoryId === cat.id).length;
+              return (
+                <Card key={cat.id} className="group relative p-4 text-center">
+                  <div className="text-3xl mb-2">{cat.emoji}</div>
+                  <p className="font-medium">{cat.name}</p>
+                  <p className="text-xs text-slate-400 mt-0.5">{itemCount} เมนู</p>
+                  {canEdit && (
+                    <div className="absolute top-1.5 right-1.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => {
+                          setEditingCategory(cat);
+                          setCatName(cat.name);
+                          setCatEmoji(cat.emoji);
+                          setShowCategoryModal(true);
+                        }}
+                        aria-label="แก้ไขหมวดหมู่"
+                        className="w-7 h-7 rounded-lg bg-white/90 text-slate-400 hover:text-blue-600 hover:bg-blue-50 cursor-pointer flex items-center justify-center shadow-sm"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteCategory(cat)}
+                        aria-label="ลบหมวดหมู่"
+                        className="w-7 h-7 rounded-lg bg-white/90 text-slate-400 hover:text-red-600 hover:bg-red-50 cursor-pointer flex items-center justify-center shadow-sm"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M3 6h18" />
+                          <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+                </Card>
+              );
+            })}
           </div>
         </>
       )}
@@ -557,8 +615,8 @@ export default function AdminMenuPage() {
             <div className="px-6 py-5 border-b border-slate-100 bg-gradient-to-br from-amber-50 to-orange-50">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-xl font-bold text-slate-900">เพิ่มหมวดหมู่</h3>
-                  <p className="text-sm text-slate-500 mt-0.5">เพิ่มหมวดหมู่เมนูใหม่</p>
+                  <h3 className="text-xl font-bold text-slate-900">{editingCategory ? "แก้ไขหมวดหมู่" : "เพิ่มหมวดหมู่"}</h3>
+                  <p className="text-sm text-slate-500 mt-0.5">{editingCategory ? "แก้ไขชื่อและ Emoji" : "เพิ่มหมวดหมู่เมนูใหม่"}</p>
                 </div>
                 <button onClick={() => setShowCategoryModal(false)} className="w-10 h-10 rounded-xl bg-white/70 hover:bg-white text-slate-500 hover:text-slate-700 cursor-pointer flex items-center justify-center transition-colors">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" x2="6" y1="6" y2="18" /><line x1="6" x2="18" y1="6" y2="18" /></svg>
@@ -576,8 +634,8 @@ export default function AdminMenuPage() {
               </div>
             </div>
             <div className="px-6 pb-6 flex gap-3">
-              <Button onClick={() => setShowCategoryModal(false)} variant="outline" className="flex-1 h-12 rounded-xl">ยกเลิก</Button>
-              <Button onClick={handleAddCategory} className="flex-1 h-12 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-xl shadow-lg shadow-amber-500/30">เพิ่มหมวดหมู่</Button>
+              <Button onClick={() => { setShowCategoryModal(false); setEditingCategory(null); }} variant="outline" className="flex-1 h-12 rounded-xl">ยกเลิก</Button>
+              <Button onClick={handleAddCategory} className="flex-1 h-12 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-xl shadow-lg shadow-amber-500/30">{editingCategory ? "บันทึกการแก้ไข" : "เพิ่มหมวดหมู่"}</Button>
             </div>
           </div>
         </div>
