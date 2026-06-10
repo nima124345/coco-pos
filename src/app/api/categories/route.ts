@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getBranchId } from "@/lib/branch";
+import { ensureCocoTopping } from "@/lib/ensure-coco-topping";
 
 export async function GET(req: NextRequest) {
   const branchId = getBranchId(req);
+
+  await ensureCocoTopping();
 
   const categories = await prisma.category.findMany({
     where: { active: true },
