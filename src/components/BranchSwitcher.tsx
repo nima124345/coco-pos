@@ -12,7 +12,7 @@ interface Props {
 export default function BranchSwitcher({ variant = "header" }: Props) {
   const [open, setOpen] = useState(false);
   const [confirming, setConfirming] = useState<{
-    mode: "BRANCH" | "BOOTH";
+    mode: "BRANCH" | "BOOTH"; 
     id: string;
   } | null>(null);
   const [tab, setTab] = useState<"BRANCH" | "BOOTH">("BRANCH");
@@ -31,7 +31,7 @@ export default function BranchSwitcher({ variant = "header" }: Props) {
   const currentBooth = boothEvents.find((b) => b.id === currentBoothEventId);
 
   const totalOptions = branches.length + boothEvents.length;
-  if (totalOptions === 0) return null;
+  if (totalOptions === 0) return null; 
 
   const needsConfirm = !!shiftId || cart.length > 0;
 

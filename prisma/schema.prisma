@@ -255,6 +255,9 @@ model Expense {
   amount       Float
   categoryId   String
   note         String   @default("")
+  paidByOwner  Boolean  @default(false)
+  recurring    Boolean  @default(false)
+  slipUrl      String   @default("")
   date         DateTime @default(now())
   createdAt    DateTime @default(now())
 

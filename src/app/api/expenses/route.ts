@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getContext, contextWhere } from "@/lib/branch";
+import { ensureExpenseColumns } from "@/lib/ensure-expense-columns";
 
 export async function GET(req: NextRequest) {
+  await ensureExpenseColumns();
   const { searchParams } = new URL(req.url);
   const month = searchParams.get("month");
   const categoryId = searchParams.get("categoryId");
@@ -37,6 +39,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  await ensureExpenseColumns();
   const body = await req.json();
   const ctx = getContext(req);
 
@@ -55,6 +58,9 @@ export async function POST(req: NextRequest) {
       branchId: ctx.mode === "BRANCH" ? ctx.id : null,
       boothEventId: ctx.mode === "BOOTH" ? ctx.id : null,
       note: body.note || "",
+      paidByOwner: !!body.paidByOwner,
+      recurring: !!body.recurring,
+      slipUrl: body.slipUrl || "",
       date: body.date ? new Date(body.date) : new Date(),
     },
     include: { category: true },
@@ -63,6 +69,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
+  await ensureExpenseColumns();
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
@@ -73,6 +80,9 @@ export async function PUT(req: NextRequest) {
   if (body.amount !== undefined) data.amount = body.amount;
   if (body.categoryId !== undefined) data.categoryId = body.categoryId;
   if (body.note !== undefined) data.note = body.note || "";
+  if (body.paidByOwner !== undefined) data.paidByOwner = !!body.paidByOwner;
+  if (body.recurring !== undefined) data.recurring = !!body.recurring;
+  if (body.slipUrl !== undefined) data.slipUrl = body.slipUrl || "";
   if (body.date !== undefined) data.date = new Date(body.date);
 
   const expense = await prisma.expense.update({
