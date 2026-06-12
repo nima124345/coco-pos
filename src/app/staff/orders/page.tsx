@@ -287,8 +287,8 @@ export default function StaffOrdersPage() {
 
       {/* Void Dialog */}
       {showVoid && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md p-6">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-bold text-red-600 mb-4">
               ยกเลิกออเดอร์ #{selectedOrder?.orderNumber}
             </h3>

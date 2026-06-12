@@ -230,14 +230,14 @@ export default function AdminInventoryPage() {
                     <div className="flex items-center justify-end gap-1">
                       <button
                         onClick={() => handleUpdateQty(item, Math.max(0, item.quantity - 1))}
-                        className="w-7 h-7 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 cursor-pointer flex items-center justify-center"
+                        className="w-9 h-9 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 cursor-pointer flex items-center justify-center"
                         aria-label="ลดจำนวน"
                       >
                         −
                       </button>
                       <button
                         onClick={() => handleUpdateQty(item, item.quantity + 1)}
-                        className="w-7 h-7 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 cursor-pointer flex items-center justify-center"
+                        className="w-9 h-9 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 cursor-pointer flex items-center justify-center"
                         aria-label="เพิ่มจำนวน"
                       >
                         +
@@ -247,7 +247,7 @@ export default function AdminInventoryPage() {
                           const qty = prompt("ใส่จำนวนใหม่:");
                           if (qty) handleUpdateQty(item, parseFloat(qty));
                         }}
-                        className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 cursor-pointer flex items-center justify-center text-xs"
+                        className="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 cursor-pointer flex items-center justify-center text-xs"
                         aria-label="กำหนดจำนวน"
                       >
                         #
@@ -255,7 +255,7 @@ export default function AdminInventoryPage() {
                       <button
                         onClick={() => handleDelete(item)}
                         aria-label="ลบวัตถุดิบ"
-                        className="w-7 h-7 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 cursor-pointer flex items-center justify-center opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity ml-1"
+                        className="w-9 h-9 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 cursor-pointer flex items-center justify-center opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:focus:opacity-100 transition-opacity ml-1"
                       >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M3 6h18" />
@@ -275,8 +275,8 @@ export default function AdminInventoryPage() {
       {canEdit && showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowModal(false)} />
-          <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden">
-            <div className="px-6 py-5 border-b border-slate-100 bg-gradient-to-br from-amber-50 to-orange-50">
+          <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+            <div className="px-6 py-5 border-b border-slate-100 bg-gradient-to-br from-amber-50 to-orange-50 shrink-0">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-xl font-bold text-slate-900">เพิ่มวัตถุดิบ</h3>
@@ -287,7 +287,7 @@ export default function AdminInventoryPage() {
                 </button>
               </div>
             </div>
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-4 flex-1 overflow-y-auto min-h-0">
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5 col-span-2">
                   <label className="text-sm font-medium text-slate-700">ชื่อวัตถุดิบ</label>
@@ -311,7 +311,7 @@ export default function AdminInventoryPage() {
                 </div>
               </div>
             </div>
-            <div className="px-6 pb-6 flex gap-3">
+            <div className="px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-2 flex gap-3 shrink-0 border-t border-slate-100">
               <Button onClick={() => setShowModal(false)} variant="outline" className="flex-1 h-12 rounded-xl">ยกเลิก</Button>
               <Button onClick={handleAdd} className="flex-1 h-12 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-xl shadow-lg shadow-amber-500/30">เพิ่มวัตถุดิบ</Button>
             </div>

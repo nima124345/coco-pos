@@ -355,7 +355,7 @@ export default function AdminMenuPage() {
                         <Badge variant={item.active ? "success" : "destructive"}>{item.active ? "ขายอยู่" : "ปิด"}</Badge>
                       </div>
                       {canEdit && (
-                      <div className="flex items-center gap-1 justify-end opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                      <div className="flex items-center gap-1 justify-end opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:focus-within:opacity-100 transition-opacity">
                         <button
                           onClick={() => {
                             setEditingMenu(item);
@@ -432,7 +432,7 @@ export default function AdminMenuPage() {
                   <p className="font-medium">{cat.name}</p>
                   <p className="text-xs text-slate-400 mt-0.5">{itemCount} เมนู</p>
                   {canEdit && (
-                    <div className="absolute top-1.5 right-1.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                    <div className="absolute top-1.5 right-1.5 flex items-center gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:focus-within:opacity-100 transition-opacity">
                       <button
                         onClick={() => {
                           setEditingCategory(cat);
@@ -471,7 +471,7 @@ export default function AdminMenuPage() {
       {showMenuModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowMenuModal(false)} />
-          <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden">
+          <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
             <div className="px-6 py-5 border-b border-slate-100 bg-gradient-to-br from-amber-50 to-orange-50">
               <div className="flex items-center justify-between">
                 <div>
@@ -483,7 +483,7 @@ export default function AdminMenuPage() {
                 </button>
               </div>
             </div>
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-4 flex-1 overflow-y-auto min-h-0">
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-slate-700">รูปภาพเมนู</label>
                 <div className="flex items-center gap-4">
@@ -563,7 +563,7 @@ export default function AdminMenuPage() {
                 </select>
               </div>
             </div>
-            <div className="px-6 pb-6 flex gap-3">
+            <div className="px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-2 flex gap-3 shrink-0 border-t border-slate-100">
               <Button onClick={() => setShowMenuModal(false)} variant="outline" className="flex-1 h-12 rounded-xl">ยกเลิก</Button>
               <Button onClick={handleAddMenu} disabled={imageUploading} className="flex-1 h-12 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-xl shadow-lg shadow-amber-500/30 disabled:opacity-50">
                 {imageUploading ? "กำลังอัปโหลด..." : editingMenu ? "บันทึกการแก้ไข" : "เพิ่มเมนู"}
@@ -577,7 +577,7 @@ export default function AdminMenuPage() {
       {showToppingModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowToppingModal(false)} />
-          <div className="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden">
+          <div className="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
             <div className="px-6 py-5 border-b border-slate-100 bg-gradient-to-br from-amber-50 to-orange-50">
               <div className="flex items-center justify-between">
                 <div>
@@ -589,7 +589,7 @@ export default function AdminMenuPage() {
                 </button>
               </div>
             </div>
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-4 flex-1 overflow-y-auto min-h-0">
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-slate-700">ชื่อท็อปปิ้ง</label>
                 <Input placeholder="เช่น ไข่มุก" value={toppingName} onChange={(e) => setToppingName(e.target.value)} autoFocus className="h-11 rounded-xl" />
@@ -599,7 +599,7 @@ export default function AdminMenuPage() {
                 <Input type="number" placeholder="0" value={toppingPrice} onChange={(e) => setToppingPrice(e.target.value)} className="h-11 rounded-xl" />
               </div>
             </div>
-            <div className="px-6 pb-6 flex gap-3">
+            <div className="px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-2 flex gap-3 shrink-0 border-t border-slate-100">
               <Button onClick={() => setShowToppingModal(false)} variant="outline" className="flex-1 h-12 rounded-xl">ยกเลิก</Button>
               <Button onClick={handleAddTopping} className="flex-1 h-12 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-xl shadow-lg shadow-amber-500/30">เพิ่มท็อปปิ้ง</Button>
             </div>
@@ -611,7 +611,7 @@ export default function AdminMenuPage() {
       {showCategoryModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowCategoryModal(false)} />
-          <div className="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden">
+          <div className="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
             <div className="px-6 py-5 border-b border-slate-100 bg-gradient-to-br from-amber-50 to-orange-50">
               <div className="flex items-center justify-between">
                 <div>
@@ -623,7 +623,7 @@ export default function AdminMenuPage() {
                 </button>
               </div>
             </div>
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-4 flex-1 overflow-y-auto min-h-0">
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-slate-700">ชื่อหมวดหมู่</label>
                 <Input placeholder="เช่น กาแฟ" value={catName} onChange={(e) => setCatName(e.target.value)} autoFocus className="h-11 rounded-xl" />
@@ -633,7 +633,7 @@ export default function AdminMenuPage() {
                 <Input placeholder="เช่น ☕" value={catEmoji} onChange={(e) => setCatEmoji(e.target.value)} className="h-11 rounded-xl" />
               </div>
             </div>
-            <div className="px-6 pb-6 flex gap-3">
+            <div className="px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-2 flex gap-3 shrink-0 border-t border-slate-100">
               <Button onClick={() => { setShowCategoryModal(false); setEditingCategory(null); }} variant="outline" className="flex-1 h-12 rounded-xl">ยกเลิก</Button>
               <Button onClick={handleAddCategory} className="flex-1 h-12 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-xl shadow-lg shadow-amber-500/30">{editingCategory ? "บันทึกการแก้ไข" : "เพิ่มหมวดหมู่"}</Button>
             </div>

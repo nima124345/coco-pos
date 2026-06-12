@@ -252,7 +252,7 @@ export default function AdminIncomePage() {
               return (
                 <li
                   key={order.id}
-                  className="group grid grid-cols-[5rem_8rem_1fr_auto_2rem] lg:grid-cols-[7rem_10rem_1fr_8rem_3rem] items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors"
+                  className="group grid grid-cols-[4.25rem_auto_1fr_auto_2rem] lg:grid-cols-[7rem_10rem_1fr_8rem_3rem] items-center gap-2 sm:gap-3 px-4 py-3 hover:bg-slate-50 transition-colors"
                 >
                   <span className="text-xs md:text-sm text-slate-500 tabular-nums">
                     {formatDate(order.createdAt)}
@@ -283,7 +283,7 @@ export default function AdminIncomePage() {
                     <button
                       onClick={() => handleDelete(order.id, order.orderNumber)}
                       aria-label="ลบออเดอร์"
-                      className="justify-self-end w-8 h-8 rounded-lg text-slate-300 hover:text-red-600 hover:bg-red-50 cursor-pointer flex items-center justify-center opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                      className="justify-self-end w-8 h-8 rounded-lg text-slate-300 hover:text-red-600 hover:bg-red-50 cursor-pointer flex items-center justify-center opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:focus:opacity-100 transition-opacity"
                     >
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M3 6h18" />

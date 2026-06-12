@@ -728,7 +728,7 @@ export default function LoginPage() {
               )}
             </div>
 
-            <div className="border-t border-stone-100 bg-stone-50 px-6 py-4 sm:px-8">
+            <div className="border-t border-stone-100 bg-stone-50 px-6 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-8">
               <button
                 onClick={() => setPendingUser(null)}
                 className="w-full cursor-pointer py-2 text-sm font-medium text-stone-500 hover:text-stone-900"

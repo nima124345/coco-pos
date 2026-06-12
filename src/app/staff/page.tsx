@@ -411,7 +411,12 @@ export default function StaffPOS() {
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto p-3 space-y-2">
+        <div
+          className={cn(
+            "overflow-y-auto p-3 space-y-2 flex-1 min-h-0",
+            showPayment && "max-h-[22vh] md:max-h-none"
+          )}
+        >
           {cart.length === 0 && !orderSuccess && (
             <div className="flex flex-col items-center justify-center h-full text-slate-400 py-12">
               <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center text-4xl mb-3">
@@ -505,7 +510,13 @@ export default function StaffPOS() {
         </div>
 
         {cart.length > 0 && (
-          <div className="border-t border-slate-100 p-4 space-y-3 bg-white">
+          <div
+            className={cn(
+              "border-t border-slate-100 p-4 space-y-3 bg-white",
+              showPayment &&
+                "flex-1 min-h-0 overflow-y-auto md:flex-none md:min-h-0 md:overflow-visible"
+            )}
+          >
             {!showPayment ? (
               <>
                 <div className="space-y-1">
@@ -704,25 +715,27 @@ export default function StaffPOS() {
                   </div>
                 )}
 
-                <Button
-                  onClick={handleCheckout}
-                  className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg shadow-green-500/30"
-                  size="xl"
-                  disabled={
-                    (paymentMethod === "CASH" &&
-                      parseFloat(cashReceived || "0") < effectiveSubTotal) ||
-                    (channel === "SHOPEE" && shopeeOrderId.trim() === "")
-                  }
-                >
-                  ✓ ยืนยันการชำระเงิน
-                </Button>
-                <Button
-                  onClick={() => setShowPayment(false)}
-                  variant="ghost"
-                  className="w-full"
-                >
-                  ← ย้อนกลับ
-                </Button>
+                <div className="sticky bottom-0 -mx-4 -mb-4 px-4 pt-2 pb-[max(1rem,env(safe-area-inset-bottom))] space-y-2 bg-white/95 backdrop-blur-sm border-t border-slate-100 md:static md:m-0 md:p-0 md:bg-transparent md:backdrop-blur-none md:border-0">
+                  <Button
+                    onClick={handleCheckout}
+                    className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg shadow-green-500/30"
+                    size="xl"
+                    disabled={
+                      (paymentMethod === "CASH" &&
+                        parseFloat(cashReceived || "0") < effectiveSubTotal) ||
+                      (channel === "SHOPEE" && shopeeOrderId.trim() === "")
+                    }
+                  >
+                    ✓ ยืนยันการชำระเงิน
+                  </Button>
+                  <Button
+                    onClick={() => setShowPayment(false)}
+                    variant="ghost"
+                    className="w-full"
+                  >
+                    ← ย้อนกลับ
+                  </Button>
+                </div>
               </>
             )}
           </div>

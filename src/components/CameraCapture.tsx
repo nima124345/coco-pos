@@ -113,16 +113,16 @@ export default function CameraCapture({
         className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
         onClick={busy ? undefined : onCancel}
       />
-      <div className="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-100">
+      <div className="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+        <div className="px-5 py-4 border-b border-slate-100 shrink-0">
           <h3 className="text-lg font-bold text-slate-900">{title}</h3>
           <p className="text-xs text-slate-500 mt-0.5">
             ถ่ายรูปเพื่อยืนยันตัวตน
           </p>
         </div>
 
-        <div className="p-5 space-y-4">
-          <div className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl bg-slate-900">
+        <div className="p-5 space-y-4 flex-1 overflow-y-auto min-h-0 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+          <div className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl bg-slate-900 shrink-0">
             {preview ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img

@@ -475,7 +475,7 @@ export default function AdminExpensesPage() {
                 <span className="text-right font-bold text-red-600 tabular-nums whitespace-nowrap">
                   -{formatCurrency(expense.amount)}
                 </span>
-                <div className="justify-self-end flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                <div className="justify-self-end flex items-center gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:focus-within:opacity-100 transition-opacity">
                   {canEdit && (
                   <>
                   <button
@@ -514,8 +514,8 @@ export default function AdminExpensesPage() {
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
             onClick={closeModal}
           />
-          <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden">
-            <div className="px-6 py-5 border-b border-slate-100 bg-gradient-to-br from-amber-50 to-orange-50">
+          <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+            <div className="px-6 py-5 border-b border-slate-100 bg-gradient-to-br from-amber-50 to-orange-50 shrink-0">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-xl font-bold text-slate-900">
@@ -537,7 +537,7 @@ export default function AdminExpensesPage() {
               </div>
             </div>
 
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-4 flex-1 overflow-y-auto min-h-0">
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-slate-700">หมวดหมู่</label>
                 <select
@@ -675,7 +675,7 @@ export default function AdminExpensesPage() {
               </div>
             </div>
 
-            <div className="px-6 pb-6 flex gap-3">
+            <div className="px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-2 flex gap-3 shrink-0 border-t border-slate-100">
               <Button
                 onClick={closeModal}
                 variant="outline"
@@ -705,8 +705,8 @@ export default function AdminExpensesPage() {
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
             onClick={() => setShowBatchModal(false)}
           />
-          <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden">
-            <div className="px-6 py-5 border-b border-slate-100 bg-gradient-to-br from-amber-50 to-orange-50">
+          <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+            <div className="px-6 py-5 border-b border-slate-100 bg-gradient-to-br from-amber-50 to-orange-50 shrink-0">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-xl font-bold text-slate-900">เพิ่มหลายรายการ</h3>
@@ -726,11 +726,11 @@ export default function AdminExpensesPage() {
               </div>
             </div>
 
-            <div className="p-6 space-y-3 max-h-[60vh] overflow-y-auto">
+            <div className="p-6 space-y-3 flex-1 min-h-0 overflow-y-auto overflow-x-auto">
               {batchRows.map((row, i) => (
                 <div
                   key={i}
-                  className="grid grid-cols-[8rem_1fr_6rem_auto_2rem] items-center gap-2"
+                  className="grid grid-cols-[8rem_1fr_6rem_auto_2rem] items-center gap-2 min-w-[26rem]"
                 >
                   <select
                     value={row.categoryId}
@@ -790,7 +790,7 @@ export default function AdminExpensesPage() {
               </button>
             </div>
 
-            <div className="px-6 pb-6 pt-2 flex items-center justify-between gap-3 border-t border-slate-100">
+            <div className="px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-2 flex items-center justify-between gap-3 border-t border-slate-100 shrink-0">
               <span className="text-sm text-slate-500">
                 รวม{" "}
                 {formatCurrency(
