@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getContext, contextWhere } from "@/lib/branch";
+import { requireAuth } from "@/lib/session";
 
 export async function GET(req: NextRequest) {
+  const auth = await requireAuth(req);
+  if (auth instanceof NextResponse) return auth;
   const { searchParams } = new URL(req.url);
   const staffId = searchParams.get("staffId");
   const status = searchParams.get("status");
@@ -32,6 +35,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await requireAuth(req);
+  if (auth instanceof NextResponse) return auth;
   const { staffId, openingCash } = await req.json();
   const ctx = getContext(req);
 
@@ -66,6 +71,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
+  const auth = await requireAuth(req);
+  if (auth instanceof NextResponse) return auth;
   const { shiftId, closingCash, note } = await req.json();
 
   const shift = await prisma.shift.findUnique({

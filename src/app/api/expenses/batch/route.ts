@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getContext } from "@/lib/branch";
 import { ensureExpenseColumns } from "@/lib/ensure-expense-columns";
+import { requireAdmin } from "@/lib/session";
 
 interface BatchItem {
   title?: string;
@@ -15,6 +16,8 @@ interface BatchItem {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await requireAdmin(req);
+  if (auth instanceof NextResponse) return auth;
   await ensureExpenseColumns();
   const body = await req.json();
   const ctx = getContext(req);

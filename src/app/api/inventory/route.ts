@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getContext } from "@/lib/branch";
+import { requireAdmin } from "@/lib/session";
 
 // Inventory is per-branch OR per-booth-event. Each owner has independent stock.
+// Admin-panel only (ADMIN/MANAGER); the staff POS app does not touch inventory.
 export async function GET(req: NextRequest) {
+  const auth = await requireAdmin(req);
+  if (auth instanceof NextResponse) return auth;
   const ctx = getContext(req);
   const { searchParams } = new URL(req.url);
   const scope = searchParams.get("scope");
@@ -30,6 +34,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await requireAdmin(req);
+  if (auth instanceof NextResponse) return auth;
   const body = await req.json();
   const ctx = getContext(req);
 
@@ -54,6 +60,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
+  const auth = await requireAdmin(req);
+  if (auth instanceof NextResponse) return auth;
   const body = await req.json();
   const { id, ...data } = body;
   const item = await prisma.inventoryItem.update({ where: { id }, data });
@@ -61,6 +69,8 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const auth = await requireAdmin(req);
+  if (auth instanceof NextResponse) return auth;
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });

@@ -2,8 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { put } from "@vercel/blob";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
+import { requireAuth } from "@/lib/session";
 
 export async function POST(req: NextRequest) {
+  const auth = await requireAuth(req);
+  if (auth instanceof NextResponse) return auth;
   let formData: FormData;
   try {
     formData = await req.formData();

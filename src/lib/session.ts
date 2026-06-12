@@ -22,11 +22,17 @@ export interface SessionPayload {
 }
 
 function getSecret(): string {
-  return (
-    process.env.AUTH_SECRET ||
-    process.env.NEXTAUTH_SECRET ||
-    "coco-pos-dev-insecure-secret-change-me"
-  );
+  const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
+  if (secret) return secret;
+  // Never fall back to a known secret in production — a public secret means
+  // anyone can forge an ADMIN session cookie. Fail loudly instead.
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "AUTH_SECRET (or NEXTAUTH_SECRET) must be set in production. Generate one with: " +
+        "node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\""
+    );
+  }
+  return "coco-pos-dev-insecure-secret-change-me";
 }
 
 function b64urlEncode(bytes: Uint8Array): string {

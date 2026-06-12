@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { requireAdmin } from "@/lib/session";
 
+// GET stays public: the login/register screen fetches the branch list before
+// the user is authenticated. It only exposes branch id + name.
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const includeInactive = searchParams.get("includeInactive") === "1";
@@ -17,6 +20,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await requireAdmin(req);
+  if (auth instanceof NextResponse) return auth;
   const body = await req.json();
 
   if (!body.name?.trim()) {
@@ -35,6 +40,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
+  const auth = await requireAdmin(req);
+  if (auth instanceof NextResponse) return auth;
   const body = await req.json();
   const { id, ...data } = body;
 
@@ -53,6 +60,8 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const auth = await requireAdmin(req);
+  if (auth instanceof NextResponse) return auth;
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });

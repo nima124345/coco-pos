@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getContext, contextWhere } from "@/lib/branch";
+import { requireAdmin } from "@/lib/session";
 
 interface OrderRow {
   netTotal: number;
@@ -19,6 +20,8 @@ interface CustomerAgg {
 }
 
 export async function GET(req: NextRequest) {
+  const auth = await requireAdmin(req);
+  if (auth instanceof NextResponse) return auth;
   const { searchParams } = new URL(req.url);
   const scope = searchParams.get("scope");
   const ctx = getContext(req);

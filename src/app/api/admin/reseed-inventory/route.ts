@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { requireAdmin } from "@/lib/session";
 
 const inventoryItems = [
   { name: "นมคาร์เนชั่น 1000 ml", unit: "กล่อง" },
@@ -46,7 +47,9 @@ const inventoryItems = [
   { name: "สติ๊กเกอร์ (50 แผ่น/แพ็ค)", unit: "แพ็ค" },
 ];
 
-export async function POST() {
+export async function POST(req: NextRequest) {
+  const auth = await requireAdmin(req);
+  if (auth instanceof NextResponse) return auth;
   const branches = await prisma.branch.findMany({ where: { active: true } });
   const results: { branch: string; updated: number; created: number }[] = [];
 
