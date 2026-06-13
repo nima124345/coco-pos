@@ -65,6 +65,13 @@ export default function AdminExpensesPage() {
   );
   const role = useAuthStore((s) => s.user?.role);
   const isManager = role === "MANAGER";
+  // Owner-paid total revealed to a manager after an admin unlocks it (null = locked).
+  const [ownerUnlock, setOwnerUnlock] = useState<number | null>(null);
+  const [showUnlockModal, setShowUnlockModal] = useState(false);
+  const [unlockUsername, setUnlockUsername] = useState("");
+  const [unlockPassword, setUnlockPassword] = useState("");
+  const [unlockError, setUnlockError] = useState("");
+  const [unlocking, setUnlocking] = useState(false);
   const availableBranches = useAuthStore((s) => s.availableBranches);
   const availableBoothEvents = useAuthStore((s) => s.availableBoothEvents);
   const currentBranchId = useAuthStore((s) => s.currentBranchId);
@@ -91,6 +98,47 @@ export default function AdminExpensesPage() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // A reveal is tied to one period/scope; re-lock when any of them changes.
+  useEffect(() => {
+    setOwnerUnlock(null);
+  }, [filterMode, filterMonth, filterDate, scope]);
+
+  const openUnlock = () => {
+    setUnlockUsername("");
+    setUnlockPassword("");
+    setUnlockError("");
+    setShowUnlockModal(true);
+  };
+
+  const handleUnlock = async () => {
+    if (!unlockUsername || !unlockPassword) return;
+    setUnlocking(true);
+    setUnlockError("");
+    try {
+      const res = await apiFetch("/api/expenses/owner-unlock", {
+        method: "POST",
+        body: JSON.stringify({
+          username: unlockUsername,
+          password: unlockPassword,
+          month: filterMode === "month" ? filterMonth : undefined,
+          date: filterMode === "day" ? filterDate : undefined,
+          scope: scope !== "current" ? scope : undefined,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setUnlockError(data.error || "เปิดสิทธิ์ไม่สำเร็จ");
+        return;
+      }
+      setOwnerUnlock(data.total ?? 0);
+      setShowUnlockModal(false);
+    } catch {
+      setUnlockError("เกิดข้อผิดพลาด กรุณาลองใหม่");
+    } finally {
+      setUnlocking(false);
+    }
+  };
 
   const resetForm = () => {
     setEditingId(null);
@@ -420,13 +468,31 @@ export default function AdminExpensesPage() {
         <Card>
           <CardContent className="pt-6">
             <p className="text-xs text-slate-500 mb-1">เจ้าของโอนเอง</p>
-            {isManager ? (
-              // Managers see the card label only — the amount is withheld.
-              <p className="text-2xl font-bold text-slate-300">—</p>
-            ) : (
+            {!isManager ? (
               <p className="text-2xl font-bold text-amber-600">
                 {formatCurrency(ownerPaidTotal)}
               </p>
+            ) : ownerUnlock !== null ? (
+              // Unlocked by an admin — show the figure for this view only.
+              <p className="text-2xl font-bold text-amber-600">
+                {formatCurrency(ownerUnlock)}
+              </p>
+            ) : (
+              // Locked: managers must request an admin to reveal the amount.
+              <button
+                type="button"
+                onClick={openUnlock}
+                className="flex items-center gap-2 cursor-pointer group"
+              >
+                <span className="text-2xl font-bold text-slate-300">••••</span>
+                <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-2 py-1 group-hover:bg-amber-100">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                  ขอสิทธิ์ดู
+                </span>
+              </button>
             )}
           </CardContent>
         </Card>
@@ -881,6 +947,81 @@ export default function AdminExpensesPage() {
             className="max-w-full max-h-[85vh] rounded-2xl shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           />
+        </div>
+      )}
+
+      {showUnlockModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            onClick={() => setShowUnlockModal(false)}
+          />
+          <div className="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden">
+            <div className="px-6 py-5 border-b border-slate-100 bg-gradient-to-br from-amber-50 to-orange-50">
+              <div className="flex items-center gap-3">
+                <span className="w-11 h-11 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                </span>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">ขอสิทธิ์ดูยอดเจ้าของโอนเอง</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    ต้องให้ Admin กรอกรหัสเพื่อเปิดสิทธิ์
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-slate-700">ชื่อผู้ใช้ Admin</label>
+                <Input
+                  placeholder="username ของ Admin"
+                  value={unlockUsername}
+                  onChange={(e) => setUnlockUsername(e.target.value)}
+                  autoFocus
+                  className="h-11 rounded-xl"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-slate-700">รหัสผ่าน Admin</label>
+                <Input
+                  type="password"
+                  placeholder="••••••••"
+                  value={unlockPassword}
+                  onChange={(e) => setUnlockPassword(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleUnlock();
+                  }}
+                  className="h-11 rounded-xl"
+                />
+              </div>
+              {unlockError && (
+                <div className="rounded-xl border-l-2 border-red-400 bg-red-50 px-3.5 py-2.5 text-[13px] text-red-700">
+                  {unlockError}
+                </div>
+              )}
+            </div>
+
+            <div className="px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-2 flex gap-3">
+              <Button
+                onClick={() => setShowUnlockModal(false)}
+                variant="outline"
+                className="flex-1 h-12 rounded-xl"
+              >
+                ยกเลิก
+              </Button>
+              <Button
+                onClick={handleUnlock}
+                disabled={unlocking || !unlockUsername || !unlockPassword}
+                className="flex-1 h-12 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-xl shadow-lg shadow-amber-500/30"
+              >
+                {unlocking ? "กำลังตรวจสอบ..." : "เปิดสิทธิ์"}
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>
