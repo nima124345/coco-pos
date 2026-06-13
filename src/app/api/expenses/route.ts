@@ -10,6 +10,7 @@ export async function GET(req: NextRequest) {
   await ensureExpenseColumns();
   const { searchParams } = new URL(req.url);
   const month = searchParams.get("month");
+  const date = searchParams.get("date"); // "YYYY-MM-DD"
   const categoryId = searchParams.get("categoryId");
   const scope = searchParams.get("scope");
   const ctx = getContext(req);
@@ -19,7 +20,13 @@ export async function GET(req: NextRequest) {
   else if (scope === "all-booths") where.boothEventId = { not: null };
   else if (scope !== "all" && ctx) Object.assign(where, contextWhere(ctx));
 
-  if (month) {
+  if (date) {
+    const start = new Date(date);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(date);
+    end.setHours(23, 59, 59, 999);
+    where.date = { gte: start, lte: end };
+  } else if (month) {
     const [year, m] = month.split("-").map(Number);
     const start = new Date(year, m - 1, 1);
     const end = new Date(year, m, 0, 23, 59, 59);

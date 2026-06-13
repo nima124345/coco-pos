@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { formatCurrency, formatDate, paymentMethodMeta } from "@/lib/utils";
+import { formatCurrency, paymentMethodMeta } from "@/lib/utils";
 import { apiFetch } from "@/lib/api";
 import { useAuthStore } from "@/store/auth";
 import { useMenuAccess } from "@/hooks/usePermission";
@@ -38,8 +38,12 @@ export default function AdminIncomePage() {
   const { canEdit } = useMenuAccess();
   const [orders, setOrders] = useState<IncomeOrder[]>([]);
   const [scope, setScope] = useState<"current" | "all" | "all-branches" | "all-booths">("current");
+  const [filterMode, setFilterMode] = useState<"month" | "day">("month");
   const [filterMonth, setFilterMonth] = useState(
     `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`
+  );
+  const [filterDate, setFilterDate] = useState(
+    new Date().toISOString().split("T")[0]
   );
   const availableBranches = useAuthStore((s) => s.availableBranches);
   const availableBoothEvents = useAuthStore((s) => s.availableBoothEvents);
@@ -51,14 +55,15 @@ export default function AdminIncomePage() {
 
   const loadData = useCallback(async () => {
     const qs = new URLSearchParams({
-      month: filterMonth,
       status: "COMPLETED",
       limit: "10000",
     });
+    if (filterMode === "day") qs.set("date", filterDate);
+    else qs.set("month", filterMonth);
     if (scope !== "current") qs.set("scope", scope);
     const res = await apiFetch(`/api/orders?${qs.toString()}`);
     setOrders(await res.json());
-  }, [filterMonth, scope]);
+  }, [filterMode, filterMonth, filterDate, scope]);
 
   useEffect(() => {
     loadData();
@@ -101,6 +106,44 @@ export default function AdminIncomePage() {
     return Array.from(map.values()).sort((a, b) => b.total - a.total);
   })();
 
+  // จัดกลุ่มออเดอร์เป็นรายวัน (วันใหม่สุดอยู่บนสุด)
+  const byDay = (() => {
+    const map = new Map<string, IncomeOrder[]>();
+    for (const o of orders) {
+      const d = new Date(o.createdAt);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+        d.getDate()
+      ).padStart(2, "0")}`;
+      const arr = map.get(key) ?? [];
+      arr.push(o);
+      map.set(key, arr);
+    }
+    return Array.from(map.entries())
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .map(([key, dayOrders]) => {
+        const sorted = [...dayOrders].sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        return {
+          key,
+          label: new Intl.DateTimeFormat("th-TH", {
+            weekday: "short",
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+          }).format(new Date(sorted[0].createdAt)),
+          orders: sorted,
+          total: sorted.reduce((sum, o) => sum + o.netTotal, 0),
+          count: sorted.length,
+        };
+      });
+  })();
+
+  const formatTime = (date: string) =>
+    new Intl.DateTimeFormat("th-TH", { hour: "2-digit", minute: "2-digit" }).format(
+      new Date(date)
+    );
+
   const handleExportCSV = () => {
     const header = "วันที่,ออเดอร์,ช่องทาง,การชำระเงิน,ลูกค้า,พนักงาน,ยอดสุทธิ\n";
     const rows = orders
@@ -117,7 +160,7 @@ export default function AdminIncomePage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `income-${filterMonth}.csv`;
+    a.download = `income-${filterMode === "day" ? filterDate : filterMonth}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -162,12 +205,45 @@ export default function AdminIncomePage() {
             <option value="all-booths">🎪 ทุกบูธ</option>
             <option value="all">🏢 ทุกที่</option>
           </select>
-          <Input
-            type="month"
-            value={filterMonth}
-            onChange={(e) => setFilterMonth(e.target.value)}
-            className="w-44"
-          />
+          <div className="inline-flex rounded-xl border border-slate-200 bg-white p-0.5">
+            <button
+              type="button"
+              onClick={() => setFilterMode("month")}
+              className={`h-9 px-3 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+                filterMode === "month"
+                  ? "bg-slate-900 text-white"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              รายเดือน
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterMode("day")}
+              className={`h-9 px-3 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+                filterMode === "day"
+                  ? "bg-slate-900 text-white"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              รายวัน
+            </button>
+          </div>
+          {filterMode === "day" ? (
+            <Input
+              type="date"
+              value={filterDate}
+              onChange={(e) => setFilterDate(e.target.value)}
+              className="w-44"
+            />
+          ) : (
+            <Input
+              type="month"
+              value={filterMonth}
+              onChange={(e) => setFilterMonth(e.target.value)}
+              className="w-44"
+            />
+          )}
           <Button onClick={handleExportCSV} variant="outline">
             Export CSV
           </Button>
@@ -177,7 +253,9 @@ export default function AdminIncomePage() {
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
         <Card>
           <CardContent className="pt-6">
-            <p className="text-xs text-slate-500 mb-1">รวมทั้งเดือน</p>
+            <p className="text-xs text-slate-500 mb-1">
+              {filterMode === "day" ? "รวมทั้งวัน" : "รวมทั้งเดือน"}
+            </p>
             <p className="text-2xl font-bold text-green-600">
               {formatCurrency(totalIncome)}
             </p>
@@ -240,64 +318,84 @@ export default function AdminIncomePage() {
         </div>
       )}
 
-      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-        {orders.length === 0 ? (
-          <div className="p-12 text-center text-slate-400">
-            ยังไม่มีรายรับในเดือนนี้
-          </div>
-        ) : (
-          <ul className="divide-y divide-slate-100">
-            {orders.map((order) => {
-              const meta = channelMeta(order.channel);
-              return (
-                <li
-                  key={order.id}
-                  className="group grid grid-cols-[4.25rem_auto_1fr_auto_2rem] lg:grid-cols-[7rem_10rem_1fr_8rem_3rem] items-center gap-2 sm:gap-3 px-4 py-3 hover:bg-slate-50 transition-colors"
-                >
-                  <span className="text-xs md:text-sm text-slate-500 tabular-nums">
-                    {formatDate(order.createdAt)}
+      {orders.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-400">
+          {filterMode === "day" ? "ยังไม่มีรายรับในวันนี้" : "ยังไม่มีรายรับในเดือนนี้"}
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {byDay.map((day) => (
+            <div
+              key={day.key}
+              className="bg-white rounded-2xl border border-slate-200 overflow-hidden"
+            >
+              <div className="flex items-center justify-between gap-3 px-4 py-3 bg-slate-50 border-b border-slate-200">
+                <div className="flex items-baseline gap-2 min-w-0">
+                  <span className="font-semibold text-slate-900 truncate">
+                    {day.label}
                   </span>
-                  <span
-                    className="justify-self-start inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium text-white truncate max-w-full"
-                    style={{ backgroundColor: meta.color }}
-                  >
-                    {meta.emoji} {meta.label}
+                  <span className="text-xs text-slate-400 whitespace-nowrap">
+                    {day.count} ออเดอร์
                   </span>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-slate-900 truncate">
-                      ออเดอร์ #{order.orderNumber}
-                      {order.customerName ? ` · ${order.customerName}` : ""}
-                    </p>
-                    <p className="text-xs text-slate-400 truncate">
-                      {paymentMethodMeta(order.paymentMethod).label}
-                      {order.staff?.name ? ` · ${order.staff.name}` : ""}
-                      {order.discount > 0
-                        ? ` · ส่วนลด ${formatCurrency(order.discount)}`
-                        : ""}
-                    </p>
-                  </div>
-                  <span className="text-right font-bold text-green-600 tabular-nums whitespace-nowrap">
-                    +{formatCurrency(order.netTotal)}
-                  </span>
-                  {canEdit && (
-                    <button
-                      onClick={() => handleDelete(order.id, order.orderNumber)}
-                      aria-label="ลบออเดอร์"
-                      className="justify-self-end w-8 h-8 rounded-lg text-slate-300 hover:text-red-600 hover:bg-red-50 cursor-pointer flex items-center justify-center opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:focus:opacity-100 transition-opacity"
+                </div>
+                <span className="font-bold text-green-600 tabular-nums whitespace-nowrap">
+                  {formatCurrency(day.total)}
+                </span>
+              </div>
+              <ul className="divide-y divide-slate-100">
+                {day.orders.map((order) => {
+                  const meta = channelMeta(order.channel);
+                  return (
+                    <li
+                      key={order.id}
+                      className="group grid grid-cols-[3.25rem_auto_1fr_auto_2rem] lg:grid-cols-[5rem_10rem_1fr_8rem_3rem] items-center gap-2 sm:gap-3 px-4 py-3 hover:bg-slate-50 transition-colors"
                     >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M3 6h18" />
-                        <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                      </svg>
-                    </button>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </div>
+                      <span className="text-xs md:text-sm text-slate-500 tabular-nums">
+                        {formatTime(order.createdAt)}
+                      </span>
+                      <span
+                        className="justify-self-start inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium text-white truncate max-w-full"
+                        style={{ backgroundColor: meta.color }}
+                      >
+                        {meta.emoji} {meta.label}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-slate-900 truncate">
+                          ออเดอร์ #{order.orderNumber}
+                          {order.customerName ? ` · ${order.customerName}` : ""}
+                        </p>
+                        <p className="text-xs text-slate-400 truncate">
+                          {paymentMethodMeta(order.paymentMethod).label}
+                          {order.staff?.name ? ` · ${order.staff.name}` : ""}
+                          {order.discount > 0
+                            ? ` · ส่วนลด ${formatCurrency(order.discount)}`
+                            : ""}
+                        </p>
+                      </div>
+                      <span className="text-right font-bold text-green-600 tabular-nums whitespace-nowrap">
+                        +{formatCurrency(order.netTotal)}
+                      </span>
+                      {canEdit && (
+                        <button
+                          onClick={() => handleDelete(order.id, order.orderNumber)}
+                          aria-label="ลบออเดอร์"
+                          className="justify-self-end w-8 h-8 rounded-lg text-slate-300 hover:text-red-600 hover:bg-red-50 cursor-pointer flex items-center justify-center opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:focus:opacity-100 transition-opacity"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M3 6h18" />
+                            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                          </svg>
+                        </button>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

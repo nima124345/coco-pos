@@ -56,9 +56,15 @@ export default function AdminExpensesPage() {
   const [creatingRecurring, setCreatingRecurring] = useState(false);
   const [slipPreview, setSlipPreview] = useState<string | null>(null);
   const [scope, setScope] = useState<"current" | "all" | "all-branches" | "all-booths">("current");
+  const [filterMode, setFilterMode] = useState<"month" | "day">("month");
   const [filterMonth, setFilterMonth] = useState(
     `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`
   );
+  const [filterDate, setFilterDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
+  const role = useAuthStore((s) => s.user?.role);
+  const isManager = role === "MANAGER";
   const availableBranches = useAuthStore((s) => s.availableBranches);
   const availableBoothEvents = useAuthStore((s) => s.availableBoothEvents);
   const currentBranchId = useAuthStore((s) => s.currentBranchId);
@@ -68,7 +74,9 @@ export default function AdminExpensesPage() {
   const currentBooth = availableBoothEvents.find((b) => b.id === currentBoothEventId);
 
   const loadData = useCallback(async () => {
-    const qs = new URLSearchParams({ month: filterMonth });
+    const qs = new URLSearchParams();
+    if (filterMode === "day") qs.set("date", filterDate);
+    else qs.set("month", filterMonth);
     if (scope !== "current") qs.set("scope", scope);
     const [expRes, catRes] = await Promise.all([
       apiFetch(`/api/expenses?${qs.toString()}`),
@@ -78,7 +86,7 @@ export default function AdminExpensesPage() {
     const catData = await catRes.json();
     setCategories(catData);
     if (catData.length > 0 && !categoryId) setCategoryId(catData[0].id);
-  }, [filterMonth, categoryId, scope]);
+  }, [filterMode, filterMonth, filterDate, categoryId, scope]);
 
   useEffect(() => {
     loadData();
@@ -288,7 +296,7 @@ export default function AdminExpensesPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `expenses-${filterMonth}.csv`;
+    a.download = `expenses-${filterMode === "day" ? filterDate : filterMonth}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -333,12 +341,45 @@ export default function AdminExpensesPage() {
             <option value="all-booths">🎪 ทุกบูธ</option>
             <option value="all">🏢 ทุกที่</option>
           </select>
-          <Input
-            type="month"
-            value={filterMonth}
-            onChange={(e) => setFilterMonth(e.target.value)}
-            className="w-44"
-          />
+          <div className="inline-flex rounded-xl border border-slate-200 bg-white p-0.5">
+            <button
+              type="button"
+              onClick={() => setFilterMode("month")}
+              className={`h-9 px-3 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+                filterMode === "month"
+                  ? "bg-slate-900 text-white"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              รายเดือน
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterMode("day")}
+              className={`h-9 px-3 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+                filterMode === "day"
+                  ? "bg-slate-900 text-white"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              รายวัน
+            </button>
+          </div>
+          {filterMode === "day" ? (
+            <Input
+              type="date"
+              value={filterDate}
+              onChange={(e) => setFilterDate(e.target.value)}
+              className="w-44"
+            />
+          ) : (
+            <Input
+              type="month"
+              value={filterMonth}
+              onChange={(e) => setFilterMonth(e.target.value)}
+              className="w-44"
+            />
+          )}
           <Button onClick={handleExportCSV} variant="outline">
             Export CSV
           </Button>
@@ -368,20 +409,24 @@ export default function AdminExpensesPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card>
           <CardContent className="pt-6">
-            <p className="text-xs text-slate-500 mb-1">รวมทั้งเดือน</p>
+            <p className="text-xs text-slate-500 mb-1">
+              {filterMode === "day" ? "รวมทั้งวัน" : "รวมทั้งเดือน"}
+            </p>
             <p className="text-2xl font-bold text-red-600">
               {formatCurrency(totalExpenses)}
             </p>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-xs text-slate-500 mb-1">เจ้าของโอนเอง</p>
-            <p className="text-2xl font-bold text-amber-600">
-              {formatCurrency(ownerPaidTotal)}
-            </p>
-          </CardContent>
-        </Card>
+        {!isManager && (
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-xs text-slate-500 mb-1">เจ้าของโอนเอง</p>
+              <p className="text-2xl font-bold text-amber-600">
+                {formatCurrency(ownerPaidTotal)}
+              </p>
+            </CardContent>
+          </Card>
+        )}
         <Card>
           <CardContent className="pt-6">
             <p className="text-xs text-slate-500 mb-1">จำนวนรายการ</p>
@@ -418,7 +463,7 @@ export default function AdminExpensesPage() {
       <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
         {expenses.length === 0 ? (
           <div className="p-12 text-center text-slate-400">
-            ยังไม่มีรายจ่ายในเดือนนี้
+            {filterMode === "day" ? "ยังไม่มีรายจ่ายในวันนี้" : "ยังไม่มีรายจ่ายในเดือนนี้"}
           </div>
         ) : (
           <ul className="divide-y divide-slate-100">
