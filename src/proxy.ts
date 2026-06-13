@@ -33,7 +33,8 @@ export async function proxy(req: NextRequest) {
   // Page guards (defense in depth — pages also redirect client-side).
   if (pathname === "/admin" || pathname.startsWith("/admin/")) {
     if (!session) return NextResponse.redirect(new URL("/", req.url));
-    if (session.role !== "ADMIN")
+    // ADMIN and MANAGER both use the admin panel; everyone else goes to staff.
+    if (session.role !== "ADMIN" && session.role !== "MANAGER")
       return NextResponse.redirect(new URL("/staff", req.url));
   } else if (pathname === "/staff" || pathname.startsWith("/staff/")) {
     if (!session) return NextResponse.redirect(new URL("/", req.url));
