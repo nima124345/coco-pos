@@ -417,16 +417,19 @@ export default function AdminExpensesPage() {
             </p>
           </CardContent>
         </Card>
-        {!isManager && (
-          <Card>
-            <CardContent className="pt-6">
-              <p className="text-xs text-slate-500 mb-1">เจ้าของโอนเอง</p>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-xs text-slate-500 mb-1">เจ้าของโอนเอง</p>
+            {isManager ? (
+              // Managers see the card label only — the amount is withheld.
+              <p className="text-2xl font-bold text-slate-300">—</p>
+            ) : (
               <p className="text-2xl font-bold text-amber-600">
                 {formatCurrency(ownerPaidTotal)}
               </p>
-            </CardContent>
-          </Card>
-        )}
+            )}
+          </CardContent>
+        </Card>
         <Card>
           <CardContent className="pt-6">
             <p className="text-xs text-slate-500 mb-1">จำนวนรายการ</p>

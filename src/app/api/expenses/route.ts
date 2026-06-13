@@ -20,6 +20,11 @@ export async function GET(req: NextRequest) {
   else if (scope === "all-booths") where.boothEventId = { not: null };
   else if (scope !== "all" && ctx) Object.assign(where, contextWhere(ctx));
 
+  // Managers must never see owner-paid expenses (items or amounts) — hide them
+  // server-side so the data never reaches the client. (`not: true` also covers
+  // legacy rows where paidByOwner is null.)
+  if (auth.role === "MANAGER") where.paidByOwner = { not: true };
+
   if (date) {
     const start = new Date(date);
     start.setHours(0, 0, 0, 0);
