@@ -45,6 +45,8 @@ const SWEETNESS_LEVELS = [
 
 const QUICK_CASH = [50, 100, 500, 1000];
 
+const SHOPEE_TAB = "__shopee__";
+
 export default function StaffPOS() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [toppings, setToppings] = useState<Topping[]>([]);
@@ -57,9 +59,8 @@ export default function StaffPOS() {
   const [quantity, setQuantity] = useState(1);
   const [showPayment, setShowPayment] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CASH");
-  const [channel, setChannel] = useState<"DINE_IN" | "DELIVERY" | "SHOPEE">(
-    "DINE_IN"
-  );
+  // หน้าร้าน vs Delivery — Shopee ถูกควบคุมผ่านแท็บ (shopeeMode) แทน
+  const [channel, setChannel] = useState<"DINE_IN" | "DELIVERY">("DINE_IN");
   const [shopeeOrderId, setShopeeOrderId] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
@@ -91,17 +92,35 @@ export default function StaffPOS() {
     loadData();
   }, [loadData]);
 
+  const shopeeMode = activeCategory === SHOPEE_TAB;
+
   const activeCategoryObj = useMemo(
     () => categories.find((c) => c.id === activeCategory),
     [categories, activeCategory]
   );
 
+  const categoryById = useMemo(
+    () => Object.fromEntries(categories.map((c) => [c.id, c])),
+    [categories]
+  );
+  const emojiFor = (item: MenuItem) =>
+    categoryById[item.categoryId]?.emoji || "🥤";
+
+  // แท็บ Shopee = เมนูสินค้าหลัก (ไม่รวมหมวดท็อปปิ้ง — ท็อปปิ้งเลือกใน modal)
+  const shopeeItems = useMemo(
+    () =>
+      categories
+        .filter((c) => !/topping|ท็อปปิ้ง/i.test(c.name))
+        .flatMap((c) => c.items),
+    [categories]
+  );
+
   const visibleItems = useMemo(() => {
-    const base = activeCategoryObj?.items ?? [];
+    const base = shopeeMode ? shopeeItems : (activeCategoryObj?.items ?? []);
     if (!search.trim()) return base;
     const q = search.toLowerCase();
     return base.filter((i) => i.name.toLowerCase().includes(q));
-  }, [activeCategoryObj, search]);
+  }, [shopeeMode, shopeeItems, activeCategoryObj, search]);
 
   const itemCount = cart.reduce((sum, i) => sum + i.quantity, 0);
 
@@ -109,7 +128,7 @@ export default function StaffPOS() {
     storePrice: number,
     shopeePrice: number
   ): number =>
-    channel === "SHOPEE" && shopeePrice > 0 ? shopeePrice : storePrice;
+    shopeeMode && shopeePrice > 0 ? shopeePrice : storePrice;
 
   const cartEffective = useMemo(() => {
     return cart.map((item) => {
@@ -118,7 +137,7 @@ export default function StaffPOS() {
       const effItemTotal = (basePrice + toppingTotal) * item.quantity;
       return { ...item, effPrice: basePrice, effItemTotal };
     });
-  }, [cart, channel]);
+  }, [cart, shopeeMode]);
 
   const effectiveSubTotal = cartEffective.reduce(
     (sum, i) => sum + i.effItemTotal,
@@ -133,7 +152,7 @@ export default function StaffPOS() {
     );
     const toppingSum = selectedToppings.reduce((s, t) => s + t.price, 0);
     return (basePrice + toppingSum) * quantity;
-  }, [selectedItem, selectedToppings, quantity, channel]);
+  }, [selectedItem, selectedToppings, quantity, shopeeMode]);
 
   const openItem = (item: MenuItem) => {
     setSelectedItem(item);
@@ -179,8 +198,8 @@ export default function StaffPOS() {
       discount: 0,
       netTotal: effectiveSubTotal,
       paymentMethod,
-      channel,
-      shopeeOrderId: channel === "SHOPEE" ? shopeeOrderId.trim() : "",
+      channel: shopeeMode ? "SHOPEE" : channel,
+      shopeeOrderId: shopeeMode ? shopeeOrderId.trim() : "",
       customerName: customerName.trim(),
       customerPhone: customerPhone.trim(),
       staffId: user.id,
@@ -216,6 +235,8 @@ export default function StaffPOS() {
       setCustomerName("");
       setCustomerPhone("");
       setChannel("DINE_IN");
+      // ออกจากโหมด Shopee กลับไปหมวดเมนูปกติ
+      if (shopeeMode) setActiveCategory(categories[0]?.id ?? "");
       setTimeout(() => {
         setOrderSuccess(null);
         setCartOpenMobile(false);
@@ -248,7 +269,8 @@ export default function StaffPOS() {
               />
             </div>
             <div className="text-xs text-slate-500 hidden md:block">
-              {visibleItems.length} เมนูในหมวด{activeCategoryObj?.name ?? ""}
+              {visibleItems.length} เมนู
+              {shopeeMode ? " (ราคา Shopee)" : `ในหมวด${activeCategoryObj?.name ?? ""}`}
             </div>
           </div>
 
@@ -284,6 +306,35 @@ export default function StaffPOS() {
                 </button>
               );
             })}
+
+            {/* แท็บแยกสำหรับออเดอร์ Shopee (ราคา Shopee) */}
+            {shopeeItems.length > 0 && (
+              <button
+                onClick={() => {
+                  setActiveCategory(SHOPEE_TAB);
+                  setSearch("");
+                }}
+                className={cn(
+                  "px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all cursor-pointer",
+                  shopeeMode
+                    ? "bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-md shadow-orange-500/30"
+                    : "bg-orange-50 text-orange-600 hover:bg-orange-100"
+                )}
+              >
+                <span className="mr-1.5">🛍️</span>
+                Shopee
+                <span
+                  className={cn(
+                    "ml-1.5 text-[11px] px-1.5 py-0.5 rounded-full",
+                    shopeeMode
+                      ? "bg-white/25 text-white"
+                      : "bg-orange-200 text-orange-600"
+                  )}
+                >
+                  {shopeeItems.length}
+                </span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -312,20 +363,31 @@ export default function StaffPOS() {
                       </span>
                     )}
                     <div className="w-full aspect-square bg-gradient-to-br from-lime-50 via-green-50 to-emerald-100 rounded-xl mb-3 flex items-center justify-center text-5xl group-hover:scale-110 transition-transform">
-                      {activeCategoryObj?.emoji || "🥤"}
+                      {emojiFor(item)}
                     </div>
                     <h3 className="font-semibold text-slate-900 text-sm leading-tight line-clamp-2 min-h-[2.5rem]">
                       {item.name}
                     </h3>
-                    <p className="text-emerald-600 font-bold mt-1">
-                      {formatCurrency(item.price)}
-                    </p>
-                    {item.shopeePrice > 0 &&
-                      item.shopeePrice !== item.price && (
-                        <p className="text-[10px] text-orange-600 font-medium">
-                          🛍️ {formatCurrency(item.shopeePrice)}
+                    {shopeeMode ? (
+                      <p className="text-orange-600 font-bold mt-1">
+                        🛍️{" "}
+                        {formatCurrency(
+                          itemEffectivePrice(item.price, item.shopeePrice)
+                        )}
+                      </p>
+                    ) : (
+                      <>
+                        <p className="text-emerald-600 font-bold mt-1">
+                          {formatCurrency(item.price)}
                         </p>
-                      )}
+                        {item.shopeePrice > 0 &&
+                          item.shopeePrice !== item.price && (
+                            <p className="text-[10px] text-orange-600 font-medium">
+                              🛍️ {formatCurrency(item.shopeePrice)}
+                            </p>
+                          )}
+                      </>
+                    )}
                   </button>
                 );
               })}
@@ -496,7 +558,7 @@ export default function StaffPOS() {
                   <span className="font-bold text-emerald-600">
                     {formatCurrency(item.effItemTotal)}
                   </span>
-                  {channel === "SHOPEE" &&
+                  {shopeeMode &&
                     item.shopeePrice > 0 &&
                     item.shopeePrice !== item.price && (
                       <p className="text-[10px] text-orange-600">
@@ -548,7 +610,7 @@ export default function StaffPOS() {
                 <div className="flex justify-between items-baseline pb-2 border-b border-slate-100">
                   <span className="font-bold text-slate-900">
                     ยอดชำระ
-                    {channel === "SHOPEE" && (
+                    {shopeeMode && (
                       <span className="ml-1.5 text-xs font-medium text-orange-600">
                         (ราคา Shopee)
                       </span>
@@ -559,61 +621,61 @@ export default function StaffPOS() {
                   </span>
                 </div>
 
-                <div>
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
-                    ช่องทางขาย
-                  </p>
-                  <div className="grid grid-cols-3 gap-2">
-                    <button
-                      onClick={() => setChannel("DINE_IN")}
-                      className={cn(
-                        "flex flex-col items-center gap-1 py-2.5 rounded-xl font-medium transition-all cursor-pointer border-2",
-                        channel === "DINE_IN"
-                          ? "bg-amber-50 border-amber-500 text-amber-700"
-                          : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
-                      )}
-                    >
-                      <span className="text-xl">🏪</span>
-                      <span className="text-xs">หน้าร้าน</span>
-                    </button>
-                    <button
-                      onClick={() => setChannel("DELIVERY")}
-                      className={cn(
-                        "flex flex-col items-center gap-1 py-2.5 rounded-xl font-medium transition-all cursor-pointer border-2",
-                        channel === "DELIVERY"
-                          ? "bg-purple-50 border-purple-500 text-purple-700"
-                          : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
-                      )}
-                    >
-                      <span className="text-xl">🛵</span>
-                      <span className="text-xs">Delivery</span>
-                    </button>
-                    <button
-                      onClick={() => setChannel("SHOPEE")}
-                      className={cn(
-                        "flex flex-col items-center gap-1 py-2.5 rounded-xl font-medium transition-all cursor-pointer border-2",
-                        channel === "SHOPEE"
-                          ? "bg-orange-50 border-orange-500 text-orange-700"
-                          : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
-                      )}
-                    >
+                {shopeeMode ? (
+                  <>
+                    <div className="flex items-center gap-2 p-3 rounded-xl bg-orange-50 border-2 border-orange-500 text-orange-700">
                       <span className="text-xl">🛍️</span>
-                      <span className="text-xs">Shopee</span>
-                    </button>
-                  </div>
-                </div>
+                      <div className="leading-tight">
+                        <p className="text-sm font-bold">ออเดอร์ Shopee</p>
+                        <p className="text-[11px] text-orange-600">
+                          ใช้ราคา Shopee — เปลี่ยนช่องทางได้ที่แท็บเมนู
+                        </p>
+                      </div>
+                    </div>
 
-                {channel === "SHOPEE" && (
+                    <div>
+                      <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                        Shopee Order ID
+                      </label>
+                      <Input
+                        placeholder="เช่น 250519XXXXXXX"
+                        value={shopeeOrderId}
+                        onChange={(e) => setShopeeOrderId(e.target.value)}
+                        className="mt-1 font-mono"
+                      />
+                    </div>
+                  </>
+                ) : (
                   <div>
-                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                      Shopee Order ID
-                    </label>
-                    <Input
-                      placeholder="เช่น 250519XXXXXXX"
-                      value={shopeeOrderId}
-                      onChange={(e) => setShopeeOrderId(e.target.value)}
-                      className="mt-1 font-mono"
-                    />
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                      ช่องทางขาย
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => setChannel("DINE_IN")}
+                        className={cn(
+                          "flex flex-col items-center gap-1 py-2.5 rounded-xl font-medium transition-all cursor-pointer border-2",
+                          channel === "DINE_IN"
+                            ? "bg-amber-50 border-amber-500 text-amber-700"
+                            : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
+                        )}
+                      >
+                        <span className="text-xl">🏪</span>
+                        <span className="text-xs">หน้าร้าน</span>
+                      </button>
+                      <button
+                        onClick={() => setChannel("DELIVERY")}
+                        className={cn(
+                          "flex flex-col items-center gap-1 py-2.5 rounded-xl font-medium transition-all cursor-pointer border-2",
+                          channel === "DELIVERY"
+                            ? "bg-purple-50 border-purple-500 text-purple-700"
+                            : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
+                        )}
+                      >
+                        <span className="text-xl">🛵</span>
+                        <span className="text-xs">Delivery</span>
+                      </button>
+                    </div>
                   </div>
                 )}
 
@@ -723,7 +785,7 @@ export default function StaffPOS() {
                     disabled={
                       (paymentMethod === "CASH" &&
                         parseFloat(cashReceived || "0") < effectiveSubTotal) ||
-                      (channel === "SHOPEE" && shopeeOrderId.trim() === "")
+                      (shopeeMode && shopeeOrderId.trim() === "")
                     }
                   >
                     ✓ ยืนยันการชำระเงิน
@@ -792,15 +854,27 @@ export default function StaffPOS() {
             <div className="flex items-start justify-between p-5 border-b border-slate-100">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-lime-50 via-green-50 to-emerald-100 flex items-center justify-center text-3xl shrink-0">
-                  {activeCategoryObj?.emoji || "🥤"}
+                  {emojiFor(selectedItem)}
                 </div>
                 <div className="min-w-0">
                   <h3 className="font-bold text-lg text-slate-900 truncate">
                     {selectedItem.name}
                   </h3>
-                  <p className="text-emerald-600 font-bold">
-                    {formatCurrency(selectedItem.price)}
-                  </p>
+                  {shopeeMode ? (
+                    <p className="text-orange-600 font-bold">
+                      🛍️{" "}
+                      {formatCurrency(
+                        itemEffectivePrice(
+                          selectedItem.price,
+                          selectedItem.shopeePrice
+                        )
+                      )}
+                    </p>
+                  ) : (
+                    <p className="text-emerald-600 font-bold">
+                      {formatCurrency(selectedItem.price)}
+                    </p>
+                  )}
                 </div>
               </div>
               <button
