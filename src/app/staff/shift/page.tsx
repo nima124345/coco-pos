@@ -30,6 +30,8 @@ export default function StaffShiftPage() {
   const [closingCash, setClosingCash] = useState("");
   const [closeNote, setCloseNote] = useState("");
   const [currentShift, setCurrentShift] = useState<Shift | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [shiftError, setShiftError] = useState("");
 
   const user = useAuthStore((s) => s.user);
   const setShiftId = useAuthStore((s) => s.setShiftId);
@@ -52,40 +54,62 @@ export default function StaffShiftPage() {
   }, [loadShifts]);
 
   const handleOpenShift = async () => {
-    if (!user) return;
-    const res = await apiFetch("/api/shifts", {
-      method: "POST",
-      body: JSON.stringify({
-        staffId: user.id,
-        openingCash: parseFloat(openingCash) || 0,
-      }),
-    });
+    if (!user || submitting) return;
+    setSubmitting(true);
+    setShiftError("");
+    try {
+      const res = await apiFetch("/api/shifts", {
+        method: "POST",
+        body: JSON.stringify({
+          staffId: user.id,
+          openingCash: parseFloat(openingCash) || 0,
+        }),
+      });
 
-    if (res.ok) {
-      const shift = await res.json();
-      setShiftId(shift.id);
-      setOpeningCash("");
-      loadShifts();
+      if (res.ok) {
+        const shift = await res.json();
+        setShiftId(shift.id);
+        setOpeningCash("");
+        loadShifts();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setShiftError(data.error || "เปิดกะไม่สำเร็จ กรุณาลองใหม่");
+      }
+    } catch {
+      setShiftError("เชื่อมต่อไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const handleCloseShift = async () => {
-    if (!currentShift) return;
-    const res = await apiFetch("/api/shifts", {
-      method: "PUT",
-      body: JSON.stringify({
-        shiftId: currentShift.id,
-        closingCash: parseFloat(closingCash) || 0,
-        note: closeNote,
-      }),
-    });
+    if (!currentShift || submitting) return;
+    setSubmitting(true);
+    setShiftError("");
+    try {
+      const res = await apiFetch("/api/shifts", {
+        method: "PUT",
+        body: JSON.stringify({
+          shiftId: currentShift.id,
+          closingCash: parseFloat(closingCash) || 0,
+          note: closeNote,
+        }),
+      });
 
-    if (res.ok) {
-      setShiftId(null);
-      setCurrentShift(null);
-      setClosingCash("");
-      setCloseNote("");
-      loadShifts();
+      if (res.ok) {
+        setShiftId(null);
+        setCurrentShift(null);
+        setClosingCash("");
+        setCloseNote("");
+        loadShifts();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setShiftError(data.error || "ปิดกะไม่สำเร็จ กรุณาลองใหม่");
+      }
+    } catch {
+      setShiftError("เชื่อมต่อไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -112,12 +136,16 @@ export default function StaffShiftPage() {
                 className="text-xl font-bold"
               />
             </div>
+            {shiftError && (
+              <p className="text-sm font-medium text-red-600">{shiftError}</p>
+            )}
             <Button
               onClick={handleOpenShift}
+              disabled={submitting}
               className="w-full bg-green-500 hover:bg-green-600 text-white"
               size="lg"
             >
-              เปิดกะ
+              {submitting ? "กำลังเปิดกะ..." : "เปิดกะ"}
             </Button>
           </CardContent>
         </Card>
@@ -170,13 +198,17 @@ export default function StaffShiftPage() {
                 onChange={(e) => setCloseNote(e.target.value)}
               />
             </div>
+            {shiftError && (
+              <p className="text-sm font-medium text-red-600">{shiftError}</p>
+            )}
             <Button
               onClick={handleCloseShift}
+              disabled={submitting}
               variant="destructive"
               className="w-full"
               size="lg"
             >
-              ปิดกะ
+              {submitting ? "กำลังปิดกะ..." : "ปิดกะ"}
             </Button>
           </CardContent>
         </Card>

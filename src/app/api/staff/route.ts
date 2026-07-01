@@ -105,7 +105,10 @@ export async function POST(req: NextRequest) {
 
   const branchIds: string[] = Array.isArray(body.branchIds) ? body.branchIds : [];
   const defaultBranchId: string | null = body.defaultBranchId || branchIds[0] || null;
-  const role: string = body.role || "STAFF";
+  // Only a full ADMIN may mint elevated accounts. A MANAGER (who also passes
+  // requireAdmin) can only ever create plain STAFF — otherwise they could grant
+  // themselves ADMIN via a second account.
+  const role: string = auth.role === "ADMIN" ? body.role || "STAFF" : "STAFF";
   // Only MANAGER carries per-menu permissions; others store an empty string.
   const permissions =
     role === "MANAGER" ? serializePermissions(body.permissions || {}) : "";
@@ -144,6 +147,31 @@ export async function PUT(req: NextRequest) {
   await ensurePermissionsColumn();
   const body = await req.json();
   const { id, password, branchIds, defaultBranchId, permissions, ...data } = body;
+
+  if (!id) {
+    return NextResponse.json({ error: "ต้องระบุ id" }, { status: 400 });
+  }
+
+  // A non-ADMIN (MANAGER) may only edit plain STAFF and may never change roles
+  // or reset another user's password — that would let them seize the ADMIN
+  // account. Enforce this before applying any of the incoming fields.
+  if (auth.role !== "ADMIN") {
+    const target = await prisma.user.findUnique({
+      where: { id },
+      select: { role: true },
+    });
+    if (!target) {
+      return NextResponse.json({ error: "ไม่พบผู้ใช้งาน" }, { status: 404 });
+    }
+    if (target.role !== "STAFF") {
+      return NextResponse.json(
+        { error: "ไม่มีสิทธิ์แก้ไขบัญชีนี้" },
+        { status: 403 }
+      );
+    }
+    // Silently drop any attempt to escalate role.
+    delete data.role;
+  }
 
   if (password) {
     data.password = await bcrypt.hash(password, 10);

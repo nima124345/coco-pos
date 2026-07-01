@@ -2,13 +2,48 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { requireAuth } from "@/lib/session";
+import { assertContextAccess } from "@/lib/branch";
 
 export async function POST(req: NextRequest) {
   // Must be logged in; the admin password below is an extra confirmation so a
   // staff terminal can void with a manager's approval without an admin session.
   const auth = await requireAuth(req);
   if (auth instanceof NextResponse) return auth;
-  const { orderId, adminPassword, voidReason } = await req.json();
+
+  let orderId: string, adminPassword: string, voidReason: string;
+  try {
+    ({ orderId, adminPassword, voidReason } = await req.json());
+  } catch {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
+  if (!orderId) {
+    return NextResponse.json({ error: "ต้องระบุออเดอร์" }, { status: 400 });
+  }
+
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: { id: true, status: true, branchId: true, boothEventId: true },
+  });
+  if (!order) {
+    return NextResponse.json({ error: "ไม่พบออเดอร์" }, { status: 404 });
+  }
+  if (order.status === "VOIDED") {
+    return NextResponse.json(
+      { error: "ออเดอร์นี้ถูกยกเลิกไปแล้ว" },
+      { status: 400 }
+    );
+  }
+
+  // A STAFF terminal can only void orders in its own branch (booths are shared).
+  const denied = await assertContextAccess(
+    auth,
+    order.branchId
+      ? { mode: "BRANCH", id: order.branchId }
+      : order.boothEventId
+      ? { mode: "BOOTH", id: order.boothEventId }
+      : null
+  );
+  if (denied) return denied;
 
   // Verify admin password
   const admins = await prisma.user.findMany({
@@ -17,7 +52,7 @@ export async function POST(req: NextRequest) {
 
   let verified = false;
   for (const admin of admins) {
-    if (await bcrypt.compare(adminPassword, admin.password)) {
+    if (await bcrypt.compare(adminPassword || "", admin.password)) {
       verified = true;
       break;
     }
@@ -30,7 +65,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const order = await prisma.order.update({
+  const updated = await prisma.order.update({
     where: { id: orderId },
     data: {
       status: "VOIDED",
@@ -38,5 +73,5 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  return NextResponse.json(order);
+  return NextResponse.json(updated);
 }

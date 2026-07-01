@@ -1,4 +1,13 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
+
+/** crypto.randomUUID is unavailable on non-HTTPS origins / older mobile browsers. */
+function newId(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
 
 export interface CartTopping {
   id: string;
@@ -33,16 +42,18 @@ function calcItemTotal(item: Omit<CartItem, "cartId" | "itemTotal">): number {
   return (item.price + toppingTotal) * item.quantity;
 }
 
-export const useCartStore = create<CartState>((set, get) => ({
-  items: [],
+export const useCartStore = create<CartState>()(
+  persist(
+    (set, get) => ({
+      items: [],
 
-  addItem: (item) => {
-    const cartId = crypto.randomUUID();
-    const itemTotal = calcItemTotal(item);
-    set((state) => ({
-      items: [...state.items, { ...item, cartId, itemTotal }],
-    }));
-  },
+      addItem: (item) => {
+        const cartId = newId();
+        const itemTotal = calcItemTotal(item);
+        set((state) => ({
+          items: [...state.items, { ...item, cartId, itemTotal }],
+        }));
+      },
 
   removeItem: (cartId) => {
     set((state) => ({
@@ -68,9 +79,12 @@ export const useCartStore = create<CartState>((set, get) => ({
     }));
   },
 
-  clearCart: () => set({ items: [] }),
+      clearCart: () => set({ items: [] }),
 
-  getSubTotal: () => {
-    return get().items.reduce((sum, item) => sum + item.itemTotal, 0);
-  },
-}));
+      getSubTotal: () => {
+        return get().items.reduce((sum, item) => sum + item.itemTotal, 0);
+      },
+    }),
+    { name: "coco-cart" }
+  )
+);

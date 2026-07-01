@@ -56,9 +56,13 @@ export default function StaffOrdersPage() {
     const params = new URLSearchParams();
     params.set("staffId", user.id);
     if (shiftId) params.set("shiftId", shiftId);
-    const res = await apiFetch(`/api/orders?${params}`);
-    const data = await res.json();
-    setOrders(data);
+    try {
+      const res = await apiFetch(`/api/orders?${params}`);
+      const data = res.ok ? await res.json() : [];
+      setOrders(Array.isArray(data) ? data : []);
+    } catch {
+      // Keep the last-loaded orders on a transient failure.
+    }
   }, [user, shiftId]);
 
   useEffect(() => {

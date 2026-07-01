@@ -67,6 +67,8 @@ export default function StaffPOS() {
   const [cashReceived, setCashReceived] = useState("");
   const [orderSuccess, setOrderSuccess] = useState<number | null>(null);
   const [cartOpenMobile, setCartOpenMobile] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [checkoutError, setCheckoutError] = useState("");
 
   const user = useAuthStore((s) => s.user);
   const shiftId = useAuthStore((s) => s.shiftId);
@@ -77,15 +79,20 @@ export default function StaffPOS() {
   const clearCart = useCartStore((s) => s.clearCart);
 
   const loadData = useCallback(async () => {
-    const [catRes, topRes] = await Promise.all([
-      apiFetch("/api/categories"),
-      apiFetch("/api/menu/toppings"),
-    ]);
-    const catData = await catRes.json();
-    const topData = await topRes.json();
-    setCategories(catData);
-    setToppings(topData);
-    if (catData.length > 0) setActiveCategory(catData[0].id);
+    try {
+      const [catRes, topRes] = await Promise.all([
+        apiFetch("/api/categories"),
+        apiFetch("/api/menu/toppings"),
+      ]);
+      const catData = catRes.ok ? await catRes.json() : [];
+      const topData = topRes.ok ? await topRes.json() : [];
+      const cats = Array.isArray(catData) ? catData : [];
+      setCategories(cats);
+      setToppings(Array.isArray(topData) ? topData : []);
+      if (cats.length > 0) setActiveCategory(cats[0].id);
+    } catch {
+      // Leave existing data in place on a transient failure rather than crashing.
+    }
   }, []);
 
   useEffect(() => {
@@ -191,7 +198,7 @@ export default function StaffPOS() {
   };
 
   const handleCheckout = async () => {
-    if (!user || cart.length === 0) return;
+    if (!user || cart.length === 0 || submitting) return;
 
     const orderData = {
       subTotal: effectiveSubTotal,
@@ -220,27 +227,40 @@ export default function StaffPOS() {
       })),
     };
 
-    const res = await apiFetch("/api/orders", {
-      method: "POST",
-      body: JSON.stringify(orderData),
-    });
+    setSubmitting(true);
+    setCheckoutError("");
+    try {
+      const res = await apiFetch("/api/orders", {
+        method: "POST",
+        body: JSON.stringify(orderData),
+      });
 
-    if (res.ok) {
-      const order = await res.json();
-      setOrderSuccess(order.orderNumber);
-      clearCart();
-      setShowPayment(false);
-      setCashReceived("");
-      setShopeeOrderId("");
-      setCustomerName("");
-      setCustomerPhone("");
-      setChannel("DINE_IN");
-      // ออกจากโหมด Shopee กลับไปหมวดเมนูปกติ
-      if (shopeeMode) setActiveCategory(categories[0]?.id ?? "");
-      setTimeout(() => {
-        setOrderSuccess(null);
-        setCartOpenMobile(false);
-      }, 3500);
+      if (res.ok) {
+        const order = await res.json();
+        setOrderSuccess(order.orderNumber);
+        clearCart();
+        setShowPayment(false);
+        setCashReceived("");
+        setShopeeOrderId("");
+        setCustomerName("");
+        setCustomerPhone("");
+        setChannel("DINE_IN");
+        // ออกจากโหมด Shopee กลับไปหมวดเมนูปกติ
+        if (shopeeMode) setActiveCategory(categories[0]?.id ?? "");
+        setTimeout(() => {
+          setOrderSuccess(null);
+          setCartOpenMobile(false);
+        }, 3500);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setCheckoutError(data.error || "บันทึกออเดอร์ไม่สำเร็จ กรุณาลองใหม่");
+      }
+    } catch {
+      setCheckoutError(
+        "เชื่อมต่อไม่สำเร็จ ตรวจสอบสัญญาณอินเทอร์เน็ตแล้วลองใหม่อีกครั้ง"
+      );
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -778,17 +798,23 @@ export default function StaffPOS() {
                 )}
 
                 <div className="sticky bottom-0 -mx-4 -mb-4 px-4 pt-2 pb-[max(1rem,env(safe-area-inset-bottom))] space-y-2 bg-white/95 backdrop-blur-sm border-t border-slate-100 md:static md:m-0 md:p-0 md:bg-transparent md:backdrop-blur-none md:border-0">
+                  {checkoutError && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm font-medium text-red-700">
+                      {checkoutError}
+                    </div>
+                  )}
                   <Button
                     onClick={handleCheckout}
                     className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg shadow-green-500/30"
                     size="xl"
                     disabled={
+                      submitting ||
                       (paymentMethod === "CASH" &&
                         parseFloat(cashReceived || "0") < effectiveSubTotal) ||
                       (shopeeMode && shopeeOrderId.trim() === "")
                     }
                   >
-                    ✓ ยืนยันการชำระเงิน
+                    {submitting ? "กำลังบันทึก..." : "✓ ยืนยันการชำระเงิน"}
                   </Button>
                   <Button
                     onClick={() => setShowPayment(false)}

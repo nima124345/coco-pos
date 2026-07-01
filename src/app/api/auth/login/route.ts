@@ -94,6 +94,10 @@ export async function POST(req: NextRequest) {
   } catch (e: unknown) {
     const err = e as Error;
     console.error("Login error:", err.message, "TURSO_DATABASE_URL:", process.env.TURSO_DATABASE_URL ? "SET" : "NOT SET", "TURSO_AUTH_TOKEN:", process.env.TURSO_AUTH_TOKEN ? "SET" : "NOT SET");
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    // Don't leak internal/DB error details to the client.
+    return NextResponse.json(
+      { error: "เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่อีกครั้ง" },
+      { status: 500 }
+    );
   }
 }

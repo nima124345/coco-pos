@@ -1,9 +1,42 @@
 import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
+import type { SessionPayload } from "@/lib/session";
 
 export const BRANCH_HEADER = "x-branch-id";
 export const BOOTH_HEADER = "x-booth-event-id";
 
 export type Context = { mode: "BRANCH" | "BOOTH"; id: string } | null;
+
+/** ADMIN and MANAGER may act across any branch/booth. */
+export function isPrivileged(session: SessionPayload): boolean {
+  return session.role === "ADMIN" || session.role === "MANAGER";
+}
+
+/**
+ * Guard against cross-branch access. The branch/booth context arrives in a
+ * client-controlled header, so a plain STAFF could otherwise point it at a
+ * branch they don't belong to. ADMIN/MANAGER are unrestricted; booth events are
+ * shared by everyone. Returns a 403 response on violation, otherwise null.
+ */
+export async function assertContextAccess(
+  session: SessionPayload,
+  ctx: Context
+): Promise<NextResponse | null> {
+  if (!ctx) return null;
+  if (isPrivileged(session)) return null;
+  if (ctx.mode === "BOOTH") return null;
+  const link = await prisma.userBranch.findUnique({
+    where: { userId_branchId: { userId: session.uid, branchId: ctx.id } },
+    select: { userId: true },
+  });
+  if (!link) {
+    return NextResponse.json(
+      { error: "ไม่มีสิทธิ์เข้าถึงสาขานี้" },
+      { status: 403 }
+    );
+  }
+  return null;
+}
 
 /** Read branch or booth context from request headers. Returns null if neither set. */
 export function getContext(req: NextRequest): Context {

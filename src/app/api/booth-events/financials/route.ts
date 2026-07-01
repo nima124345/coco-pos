@@ -48,30 +48,32 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: "Missing boothId" }, { status: 400 });
   }
 
-  await prisma.boothEvent.update({
-    where: { id: boothId },
-    data: {
-      ...(name !== undefined && { name }),
-      ...(location !== undefined && { location }),
-      cashIncome,
-      transferIncome,
-    },
-  });
+  const rows = (expenses || [])
+    .map((exp) => ({
+      boothEventId: boothId,
+      title: exp.categoryName,
+      amount: Number(exp.amount),
+      categoryId: exp.categoryId,
+    }))
+    .filter((r) => Number.isFinite(r.amount) && r.amount > 0);
 
-  await prisma.expense.deleteMany({ where: { boothEventId: boothId } });
-
-  for (const exp of expenses) {
-    if (exp.amount > 0) {
-      await prisma.expense.create({
-        data: {
-          boothEventId: boothId,
-          title: exp.categoryName,
-          amount: exp.amount,
-          categoryId: exp.categoryId,
-        },
-      });
+  // Delete-then-recreate must be atomic: a partial failure here would otherwise
+  // wipe the booth's expenses without writing the replacements back.
+  await prisma.$transaction(async (tx) => {
+    await tx.boothEvent.update({
+      where: { id: boothId },
+      data: {
+        ...(name !== undefined && { name }),
+        ...(location !== undefined && { location }),
+        cashIncome: Number(cashIncome) || 0,
+        transferIncome: Number(transferIncome) || 0,
+      },
+    });
+    await tx.expense.deleteMany({ where: { boothEventId: boothId } });
+    if (rows.length) {
+      await tx.expense.createMany({ data: rows });
     }
-  }
+  });
 
   return NextResponse.json({ success: true });
 }
