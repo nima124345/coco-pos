@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { createSessionToken, setSessionCookie, Role } from "@/lib/session";
 import { ensurePermissionsColumn } from "@/lib/ensure-permissions";
 import { parsePermissions } from "@/lib/permissions";
+import { rateLimit, rateLimitReset } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,6 +15,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       { error: "กรุณากรอก username และ password" },
       { status: 400 }
+    );
+  }
+
+  // Throttle repeated attempts per username (survives one warm instance).
+  const rlKey = `login:${String(username).toLowerCase()}`;
+  const rl = rateLimit(rlKey, { limit: 8, windowMs: 5 * 60 * 1000 });
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: `พยายามเข้าสู่ระบบบ่อยเกินไป กรุณารอ ${rl.retryAfterSec} วินาที` },
+      { status: 429 }
     );
   }
 
@@ -95,6 +106,7 @@ export async function POST(req: NextRequest) {
     role: user.role as Role,
   });
   setSessionCookie(res, token);
+  rateLimitReset(rlKey); // successful auth clears the throttle
   return res;
   } catch (e: unknown) {
     const err = e as Error;

@@ -9,10 +9,12 @@ import {
 import { requireAdmin, requireAuth } from "@/lib/session";
 import { managerPermissionDenied, inactiveUserDenied } from "@/lib/authz";
 import { round2 } from "@/lib/utils";
+import { ensureIndexes } from "@/lib/ensure-indexes";
 
 export async function GET(req: NextRequest) {
   const auth = await requireAuth(req);
   if (auth instanceof NextResponse) return auth;
+  void ensureIndexes();
   const { searchParams } = new URL(req.url);
   const staffId = searchParams.get("staffId");
   const shiftId = searchParams.get("shiftId");

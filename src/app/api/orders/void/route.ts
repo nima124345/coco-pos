@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { requireAuth } from "@/lib/session";
 import { inactiveUserDenied } from "@/lib/authz";
 import { assertContextAccess } from "@/lib/branch";
+import { rateLimit, rateLimitReset } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
   // Must be logged in; the admin password below is an extra confirmation so a
@@ -12,6 +13,16 @@ export async function POST(req: NextRequest) {
   if (auth instanceof NextResponse) return auth;
   const inactive = await inactiveUserDenied(auth);
   if (inactive) return inactive;
+
+  // Limit admin-password guessing through the void endpoint (per user).
+  const rlKey = `void:${auth.uid}`;
+  const rl = rateLimit(rlKey, { limit: 10, windowMs: 5 * 60 * 1000 });
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: `ลองบ่อยเกินไป กรุณารอ ${rl.retryAfterSec} วินาที` },
+      { status: 429 }
+    );
+  }
 
   let orderId: string, adminPassword: string, voidReason: string;
   try {
@@ -68,6 +79,7 @@ export async function POST(req: NextRequest) {
       { status: 401 }
     );
   }
+  rateLimitReset(rlKey); // correct admin password clears the throttle
 
   // Attribute the void: who initiated it (session), which admin approved, and
   // when — appended to voidReason so there's a trail even without extra columns.

@@ -167,6 +167,9 @@ model Order {
 
   @@index([branchId])
   @@index([boothEventId])
+  @@index([staffId])
+  @@index([shiftId])
+  @@index([createdAt])
 }
 
 model OrderItem {
@@ -267,6 +270,7 @@ model Expense {
 
   @@index([branchId])
   @@index([boothEventId])
+  @@index([date])
 }
 
 // ==================== Promotions ====================

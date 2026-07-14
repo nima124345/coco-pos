@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { getContext, contextWhere } from "@/lib/branch";
 import { ensureExpenseColumns } from "@/lib/ensure-expense-columns";
 import { requireAuth } from "@/lib/session";
+import { rateLimit, rateLimitReset } from "@/lib/rate-limit";
 
 /**
  * Reveal the owner-paid (เจ้าของโอนเอง) expense total to a manager, but only
@@ -32,6 +33,16 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Limit admin-credential guessing through the unlock endpoint (per user).
+  const rlKey = `unlock:${auth.uid}`;
+  const rl = rateLimit(rlKey, { limit: 10, windowMs: 5 * 60 * 1000 });
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: `ลองบ่อยเกินไป กรุณารอ ${rl.retryAfterSec} วินาที` },
+      { status: 429 }
+    );
+  }
+
   const admin = await prisma.user.findUnique({ where: { username } });
   if (!admin || !admin.active || admin.role !== "ADMIN") {
     return NextResponse.json(
@@ -46,6 +57,7 @@ export async function POST(req: NextRequest) {
       { status: 401 }
     );
   }
+  rateLimitReset(rlKey); // correct credentials clear the throttle
 
   // Same scope/period filter as the expenses list, but owner-paid only.
   const ctx = getContext(req);

@@ -10,11 +10,13 @@ import { ensureExpenseColumns } from "@/lib/ensure-expense-columns";
 import { requireAuth } from "@/lib/session";
 import { managerPermissionDenied } from "@/lib/authz";
 import { round2 } from "@/lib/utils";
+import { ensureIndexes } from "@/lib/ensure-indexes";
 
 export async function GET(req: NextRequest) {
   const auth = await requireAuth(req);
   if (auth instanceof NextResponse) return auth;
   await ensureExpenseColumns();
+  void ensureIndexes();
   const { searchParams } = new URL(req.url);
   const month = searchParams.get("month");
   const date = searchParams.get("date"); // "YYYY-MM-DD"
