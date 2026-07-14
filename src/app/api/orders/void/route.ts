@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { requireAuth } from "@/lib/session";
+import { inactiveUserDenied } from "@/lib/authz";
 import { assertContextAccess } from "@/lib/branch";
 
 export async function POST(req: NextRequest) {
@@ -9,6 +10,8 @@ export async function POST(req: NextRequest) {
   // staff terminal can void with a manager's approval without an admin session.
   const auth = await requireAuth(req);
   if (auth instanceof NextResponse) return auth;
+  const inactive = await inactiveUserDenied(auth);
+  if (inactive) return inactive;
 
   let orderId: string, adminPassword: string, voidReason: string;
   try {
@@ -45,31 +48,41 @@ export async function POST(req: NextRequest) {
   );
   if (denied) return denied;
 
-  // Verify admin password
+  // Verify admin password, and remember WHICH admin approved for the audit trail.
   const admins = await prisma.user.findMany({
     where: { role: "ADMIN", active: true },
+    select: { id: true, username: true, password: true },
   });
 
-  let verified = false;
+  let approvedBy: string | null = null;
   for (const admin of admins) {
     if (await bcrypt.compare(adminPassword || "", admin.password)) {
-      verified = true;
+      approvedBy = admin.username;
       break;
     }
   }
 
-  if (!verified) {
+  if (!approvedBy) {
     return NextResponse.json(
       { error: "รหัสผ่านแอดมินไม่ถูกต้อง" },
       { status: 401 }
     );
   }
 
+  // Attribute the void: who initiated it (session), which admin approved, and
+  // when — appended to voidReason so there's a trail even without extra columns.
+  const initiator = await prisma.user.findUnique({
+    where: { id: auth.uid },
+    select: { username: true },
+  });
+  const reason = (voidReason || "ยกเลิกโดยแอดมิน").trim();
+  const stamp = `[โดย ${initiator?.username ?? auth.uid} • อนุมัติ ${approvedBy} • ${new Date().toISOString()}]`;
+
   const updated = await prisma.order.update({
     where: { id: orderId },
     data: {
       status: "VOIDED",
-      voidReason: voidReason || "ยกเลิกโดยแอดมิน",
+      voidReason: `${reason} ${stamp}`,
     },
   });
 

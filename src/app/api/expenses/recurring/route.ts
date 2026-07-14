@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { getContext, contextWhere } from "@/lib/branch";
 import { ensureExpenseColumns } from "@/lib/ensure-expense-columns";
 import { requireAdmin } from "@/lib/session";
+import { managerPermissionDenied } from "@/lib/authz";
 
 /**
  * Clone recurring expenses into the given month.
@@ -15,6 +16,8 @@ import { requireAdmin } from "@/lib/session";
 export async function POST(req: NextRequest) {
   const auth = await requireAdmin(req);
   if (auth instanceof NextResponse) return auth;
+  const denied = await managerPermissionDenied(auth, "expenses");
+  if (denied) return denied;
   await ensureExpenseColumns();
   const { searchParams } = new URL(req.url);
   const month = searchParams.get("month"); // YYYY-MM

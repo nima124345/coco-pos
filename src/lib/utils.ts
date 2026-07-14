@@ -5,6 +5,17 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/**
+ * Round a monetary value to 2 decimal places. Money is stored as Float, so
+ * every computed amount (line totals, discounts, cash differences) is rounded
+ * here before it is persisted to stop IEEE-754 error from accumulating across
+ * additions and report sums. (A full move to integer minor units — satang — is
+ * the proper long-term fix; this bounds the drift in the meantime.)
+ */
+export function round2(n: number): number {
+  return Math.round((n + Number.EPSILON) * 100) / 100;
+}
+
 export function formatCurrency(amount: number): string {
   return new Intl.NumberFormat("th-TH", {
     style: "currency",

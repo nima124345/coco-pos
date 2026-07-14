@@ -7,6 +7,8 @@ import {
   isPrivileged,
 } from "@/lib/branch";
 import { requireAdmin, requireAuth } from "@/lib/session";
+import { managerPermissionDenied, inactiveUserDenied } from "@/lib/authz";
+import { round2 } from "@/lib/utils";
 
 export async function GET(req: NextRequest) {
   const auth = await requireAuth(req);
@@ -76,9 +78,28 @@ export async function GET(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const auth = await requireAdmin(req);
   if (auth instanceof NextResponse) return auth;
+  const denied = await managerPermissionDenied(auth, "orders");
+  if (denied) return denied;
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+
+  // Never destroy a live sale: a COMPLETED order must be VOIDED first (which is
+  // attributable) before it can be removed. This keeps revenue/shift totals from
+  // silently changing under a hard delete.
+  const target = await prisma.order.findUnique({
+    where: { id },
+    select: { status: true },
+  });
+  if (!target) {
+    return NextResponse.json({ error: "ไม่พบออเดอร์" }, { status: 404 });
+  }
+  if (target.status !== "VOIDED") {
+    return NextResponse.json(
+      { error: "ต้องยกเลิก (void) ออเดอร์ก่อนจึงจะลบได้" },
+      { status: 400 }
+    );
+  }
 
   const items = await prisma.orderItem.findMany({
     where: { orderId: id },
@@ -123,6 +144,10 @@ export async function POST(req: NextRequest) {
   // A STAFF terminal must belong to the branch it claims (booths are shared).
   const denied = await assertContextAccess(auth, ctx);
   if (denied) return denied;
+
+  // A deactivated staff's 30-day cookie must not be able to keep ringing sales.
+  const inactive = await inactiveUserDenied(auth);
+  if (inactive) return inactive;
 
   let body: {
     items?: IncomingItem[];
@@ -243,7 +268,7 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      const itemTotal = (unitPrice + toppingSum) * qty;
+      const itemTotal = round2((unitPrice + toppingSum) * qty);
       subTotal += itemTotal;
       items.push({
         menuItemId: mi.id,
@@ -268,10 +293,39 @@ export async function POST(req: NextRequest) {
         promotionId = promo.id;
         discount =
           promo.type === "PERCENT" ? (subTotal * promo.value) / 100 : promo.value;
-        discount = Math.min(Math.max(0, discount), subTotal);
+        discount = round2(Math.min(Math.max(0, discount), subTotal));
       }
     }
-    const netTotal = subTotal - discount;
+    subTotal = round2(subTotal);
+    const netTotal = round2(subTotal - discount);
+
+    // Only attribute the sale to a shift the caller actually owns, that is still
+    // OPEN and belongs to this same branch/booth. Otherwise cash sales could be
+    // hidden from a shift's expectedCash by sending a foreign or null shiftId.
+    let validShiftId: string | null = null;
+    if (body.shiftId) {
+      const shift = await prisma.shift.findUnique({
+        where: { id: body.shiftId },
+        select: {
+          staffId: true,
+          status: true,
+          branchId: true,
+          boothEventId: true,
+        },
+      });
+      const matchesCtx =
+        ctx.mode === "BRANCH"
+          ? shift?.branchId === ctx.id
+          : shift?.boothEventId === ctx.id;
+      if (
+        shift &&
+        shift.status === "OPEN" &&
+        shift.staffId === auth.uid &&
+        matchesCtx
+      ) {
+        validShiftId = body.shiftId;
+      }
+    }
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -291,7 +345,7 @@ export async function POST(req: NextRequest) {
       branchId: ctx.mode === "BRANCH" ? ctx.id : null,
       boothEventId: ctx.mode === "BOOTH" ? ctx.id : null,
       staffId: auth.uid, // attribution comes from the session, not the client
-      shiftId: body.shiftId || null,
+      shiftId: validShiftId,
       promotionId,
     };
 

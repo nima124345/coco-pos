@@ -186,7 +186,11 @@ export default function LoginPage() {
         return;
       }
 
-      setSuccess("สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ");
+      setSuccess(
+        data.pendingApproval
+          ? "สมัครสมาชิกสำเร็จ! บัญชีรอผู้ดูแลระบบอนุมัติก่อนเข้าใช้งาน"
+          : "สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ"
+      );
       setRegName("");
       setRegUsername("");
       setRegPassword("");
@@ -197,7 +201,7 @@ export default function LoginPage() {
         setMode("login");
         setUsername(data.username);
         setSuccess("");
-      }, 1500);
+      }, 2500);
     } catch {
       setError("เกิดข้อผิดพลาด กรุณาลองใหม่");
     } finally {

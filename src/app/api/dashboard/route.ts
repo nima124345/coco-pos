@@ -2,10 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getContext, contextWhere } from "@/lib/branch";
 import { requireAdmin } from "@/lib/session";
+import { managerPermissionDenied } from "@/lib/authz";
 
 export async function GET(req: NextRequest) {
   const auth = await requireAdmin(req);
   if (auth instanceof NextResponse) return auth;
+  const denied = await managerPermissionDenied(auth, "dashboard", "VIEW");
+  if (denied) return denied;
   const { searchParams } = new URL(req.url);
   const period = searchParams.get("period") || "today";
   const scope = searchParams.get("scope"); // "all" | "all-branches" | "all-booths" | null

@@ -8,6 +8,8 @@ import {
 } from "@/lib/branch";
 import { ensureExpenseColumns } from "@/lib/ensure-expense-columns";
 import { requireAuth } from "@/lib/session";
+import { managerPermissionDenied } from "@/lib/authz";
+import { round2 } from "@/lib/utils";
 
 export async function GET(req: NextRequest) {
   const auth = await requireAuth(req);
@@ -73,6 +75,8 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const auth = await requireAuth(req);
   if (auth instanceof NextResponse) return auth;
+  const permDenied = await managerPermissionDenied(auth, "expenses");
+  if (permDenied) return permDenied;
   await ensureExpenseColumns();
   const body = await req.json();
   const ctx = getContext(req);
@@ -86,7 +90,7 @@ export async function POST(req: NextRequest) {
   const denied = await assertContextAccess(auth, ctx);
   if (denied) return denied;
 
-  const amount = Number(body.amount);
+  const amount = round2(Number(body.amount));
   if (!Number.isFinite(amount) || amount <= 0) {
     return NextResponse.json(
       { error: "จำนวนเงินต้องมากกว่า 0" },
@@ -115,6 +119,8 @@ export async function POST(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   const auth = await requireAuth(req);
   if (auth instanceof NextResponse) return auth;
+  const permDenied = await managerPermissionDenied(auth, "expenses");
+  if (permDenied) return permDenied;
   await ensureExpenseColumns();
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
@@ -141,7 +147,7 @@ export async function PUT(req: NextRequest) {
   const data: Record<string, unknown> = {};
   if (body.title !== undefined) data.title = body.title;
   if (body.amount !== undefined) {
-    const amount = Number(body.amount);
+    const amount = round2(Number(body.amount));
     if (!Number.isFinite(amount) || amount <= 0) {
       return NextResponse.json(
         { error: "จำนวนเงินต้องมากกว่า 0" },
@@ -168,6 +174,8 @@ export async function PUT(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const auth = await requireAuth(req);
   if (auth instanceof NextResponse) return auth;
+  const permDenied = await managerPermissionDenied(auth, "expenses");
+  if (permDenied) return permDenied;
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });

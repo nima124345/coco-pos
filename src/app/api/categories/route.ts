@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { getBranchId } from "@/lib/branch";
 import { ensureCocoTopping } from "@/lib/ensure-coco-topping";
 import { requireAdmin, requireAuth } from "@/lib/session";
+import { managerPermissionDenied } from "@/lib/authz";
 
 export async function GET(req: NextRequest) {
   const auth = await requireAuth(req);
@@ -70,6 +71,8 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const auth = await requireAdmin(req);
   if (auth instanceof NextResponse) return auth;
+  const denied = await managerPermissionDenied(auth, "menu");
+  if (denied) return denied;
   const body = await req.json();
   const category = await prisma.category.create({ data: body });
   return NextResponse.json(category);
@@ -78,6 +81,8 @@ export async function POST(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   const auth = await requireAdmin(req);
   if (auth instanceof NextResponse) return auth;
+  const denied = await managerPermissionDenied(auth, "menu");
+  if (denied) return denied;
   const body = await req.json();
   const { id, ...data } = body;
   const category = await prisma.category.update({ where: { id }, data });
@@ -87,6 +92,8 @@ export async function PUT(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const auth = await requireAdmin(req);
   if (auth instanceof NextResponse) return auth;
+  const denied = await managerPermissionDenied(auth, "menu");
+  if (denied) return denied;
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });

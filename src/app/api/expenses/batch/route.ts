@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { getContext } from "@/lib/branch";
 import { ensureExpenseColumns } from "@/lib/ensure-expense-columns";
 import { requireAdmin } from "@/lib/session";
+import { managerPermissionDenied } from "@/lib/authz";
 
 interface BatchItem {
   title?: string;
@@ -18,6 +19,8 @@ interface BatchItem {
 export async function POST(req: NextRequest) {
   const auth = await requireAdmin(req);
   if (auth instanceof NextResponse) return auth;
+  const denied = await managerPermissionDenied(auth, "expenses");
+  if (denied) return denied;
   await ensureExpenseColumns();
   const body = await req.json();
   const ctx = getContext(req);

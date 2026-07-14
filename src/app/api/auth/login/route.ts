@@ -30,13 +30,18 @@ export async function POST(req: NextRequest) {
     },
   });
 
+  // Use one uniform message for "no such user", "inactive", and "wrong password"
+  // so the endpoint can't be used to enumerate which usernames exist.
+  const INVALID = "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง";
   if (!user || !user.active) {
-    return NextResponse.json({ error: "ไม่พบผู้ใช้งานนี้" }, { status: 401 });
+    // Still run a compare against a decoy hash to keep timing roughly constant.
+    await bcrypt.compare(password, "$2a$10$usesomesillystringforsalthashaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+    return NextResponse.json({ error: INVALID }, { status: 401 });
   }
 
   const isValid = await bcrypt.compare(password, user.password);
   if (!isValid) {
-    return NextResponse.json({ error: "รหัสผ่านไม่ถูกต้อง" }, { status: 401 });
+    return NextResponse.json({ error: INVALID }, { status: 401 });
   }
 
   // Available branches

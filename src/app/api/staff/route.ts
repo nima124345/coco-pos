@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { requireAdmin } from "@/lib/session";
+import { managerPermissionDenied } from "@/lib/authz";
 import { ensureAttendanceTable } from "@/lib/ensure-attendance";
 import { ensurePermissionsColumn } from "@/lib/ensure-permissions";
 import { parsePermissions, serializePermissions } from "@/lib/permissions";
@@ -9,6 +10,8 @@ import { parsePermissions, serializePermissions } from "@/lib/permissions";
 export async function GET(req: NextRequest) {
   const auth = await requireAdmin(req);
   if (auth instanceof NextResponse) return auth;
+  const denied = await managerPermissionDenied(auth, "staff", "VIEW");
+  if (denied) return denied;
 
   await ensurePermissionsColumn();
   const users = await prisma.user.findMany({
@@ -88,6 +91,8 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const auth = await requireAdmin(req);
   if (auth instanceof NextResponse) return auth;
+  const denied = await managerPermissionDenied(auth, "staff");
+  if (denied) return denied;
 
   await ensurePermissionsColumn();
   const body = await req.json();
@@ -143,6 +148,8 @@ export async function POST(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   const auth = await requireAdmin(req);
   if (auth instanceof NextResponse) return auth;
+  const denied = await managerPermissionDenied(auth, "staff");
+  if (denied) return denied;
 
   await ensurePermissionsColumn();
   const body = await req.json();
@@ -229,6 +236,8 @@ export async function PUT(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const auth = await requireAdmin(req);
   if (auth instanceof NextResponse) return auth;
+  const denied = await managerPermissionDenied(auth, "staff");
+  if (denied) return denied;
 
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
