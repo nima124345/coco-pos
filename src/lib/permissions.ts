@@ -23,7 +23,9 @@ export type MenuKey =
   | "promotions"
   | "inventory"
   | "orders"
-  | "customers";
+  | "customers"
+  | "activity"
+  | "settings";
 
 export type PermissionMap = Partial<Record<MenuKey, PermissionLevel>>;
 
@@ -45,6 +47,8 @@ export const ADMIN_MENUS: AdminMenu[] = [
   { key: "inventory", href: "/admin/inventory", label: "สต็อก", icon: "📦" },
   { key: "orders", href: "/admin/orders", label: "ออเดอร์ทั้งหมด", icon: "📋" },
   { key: "customers", href: "/admin/customers", label: "ลูกค้า", icon: "🧑‍💼" },
+  { key: "activity", href: "/admin/activity", label: "บันทึกกิจกรรม", icon: "📜" },
+  { key: "settings", href: "/admin/settings", label: "ตั้งค่า", icon: "⚙️" },
 ];
 
 export const PERMISSION_LABELS: Record<PermissionLevel, string> = {

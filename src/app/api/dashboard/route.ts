@@ -94,13 +94,24 @@ export async function GET(req: NextRequest) {
   // Current stock value (point-in-time, not period-based) for the same scope
   const inventoryItems = await prisma.inventoryItem.findMany({
     where: { active: true, ...ctxWhere },
-    select: { quantity: true, costPrice: true },
+    select: { name: true, quantity: true, costPrice: true, minStock: true, unit: true },
   });
   const stockValue = inventoryItems.reduce(
     (sum, i) => sum + i.quantity * i.costPrice,
     0
   );
   const stockItemCount = inventoryItems.length;
+
+  // Items at or below their reorder threshold (minStock > 0 means tracked).
+  const lowStock = inventoryItems
+    .filter((i) => i.minStock > 0 && i.quantity <= i.minStock)
+    .map((i) => ({
+      name: i.name,
+      quantity: i.quantity,
+      minStock: i.minStock,
+      unit: i.unit,
+    }))
+    .sort((a, b) => a.quantity - b.quantity);
 
   const expenseByCategory: Record<string, { name: string; amount: number; color: string }> = {};
   expenses.forEach((e) => {
@@ -195,6 +206,7 @@ export async function GET(req: NextRequest) {
     netProfit: totalSales - totalExpenses,
     stockValue,
     stockItemCount,
+    lowStock,
     cashSales,
     qrSales,
     thaiPlusSales,

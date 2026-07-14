@@ -24,6 +24,14 @@ interface Shift {
   _count: { orders: number };
 }
 
+interface CashMovement {
+  id: string;
+  type: string; // IN | OUT
+  amount: number;
+  reason: string;
+  createdAt: string;
+}
+
 export default function StaffShiftPage() {
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [openingCash, setOpeningCash] = useState("");
@@ -33,8 +41,24 @@ export default function StaffShiftPage() {
   const [submitting, setSubmitting] = useState(false);
   const [shiftError, setShiftError] = useState("");
 
+  const [movements, setMovements] = useState<CashMovement[]>([]);
+  const [moveType, setMoveType] = useState<"IN" | "OUT" | null>(null);
+  const [moveAmount, setMoveAmount] = useState("");
+  const [moveReason, setMoveReason] = useState("");
+  const [moveError, setMoveError] = useState("");
+  const [moveSubmitting, setMoveSubmitting] = useState(false);
+
   const user = useAuthStore((s) => s.user);
   const setShiftId = useAuthStore((s) => s.setShiftId);
+
+  const loadMovements = useCallback(async (shiftId: string) => {
+    try {
+      const res = await apiFetch(`/api/shifts/cash-movement?shiftId=${shiftId}`);
+      if (res.ok) setMovements(await res.json());
+    } catch {
+      /* ignore — movements are supplementary */
+    }
+  }, []);
 
   const loadShifts = useCallback(async () => {
     if (!user) return;
@@ -46,8 +70,46 @@ export default function StaffShiftPage() {
     if (openShift) {
       setCurrentShift(openShift);
       setShiftId(openShift.id);
+      loadMovements(openShift.id);
+    } else {
+      setMovements([]);
     }
-  }, [user, setShiftId]);
+  }, [user, setShiftId, loadMovements]);
+
+  const submitMovement = async () => {
+    if (!currentShift || !moveType || moveSubmitting) return;
+    const amt = parseFloat(moveAmount);
+    if (!amt || amt <= 0) {
+      setMoveError("จำนวนเงินต้องมากกว่า 0");
+      return;
+    }
+    setMoveSubmitting(true);
+    setMoveError("");
+    try {
+      const res = await apiFetch("/api/shifts/cash-movement", {
+        method: "POST",
+        body: JSON.stringify({
+          shiftId: currentShift.id,
+          type: moveType,
+          amount: amt,
+          reason: moveReason,
+        }),
+      });
+      if (res.ok) {
+        setMoveType(null);
+        setMoveAmount("");
+        setMoveReason("");
+        loadMovements(currentShift.id);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setMoveError(data.error || "บันทึกไม่สำเร็จ");
+      }
+    } catch {
+      setMoveError("เชื่อมต่อไม่สำเร็จ กรุณาลองใหม่");
+    } finally {
+      setMoveSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     loadShifts();
@@ -171,6 +233,100 @@ export default function StaffShiftPage() {
                   {formatCurrency(currentShift.openingCash)}
                 </p>
               </div>
+            </div>
+
+            <hr className="border-green-200" />
+
+            {/* Cash in / out of the drawer during the shift */}
+            <div>
+              <h4 className="font-semibold mb-2">เงินเข้า-ออกลิ้นชัก</h4>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => {
+                    setMoveType("IN");
+                    setMoveError("");
+                  }}
+                  className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
+                >
+                  + เงินเข้า
+                </Button>
+                <Button
+                  onClick={() => {
+                    setMoveType("OUT");
+                    setMoveError("");
+                  }}
+                  className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
+                >
+                  − เงินออก (จ่ายของ)
+                </Button>
+              </div>
+
+              {moveType && (
+                <div className="bg-white rounded-xl p-3 space-y-2 mt-3">
+                  <p className="text-sm font-medium">
+                    {moveType === "IN" ? "บันทึกเงินเข้า" : "บันทึกเงินออก"}
+                  </p>
+                  <Input
+                    type="number"
+                    placeholder="จำนวนเงิน (บาท)"
+                    value={moveAmount}
+                    onChange={(e) => setMoveAmount(e.target.value)}
+                  />
+                  <Input
+                    placeholder="เหตุผล (เช่น ซื้อน้ำแข็ง, ทอนเงิน)"
+                    value={moveReason}
+                    onChange={(e) => setMoveReason(e.target.value)}
+                  />
+                  {moveError && (
+                    <p className="text-sm text-red-600">{moveError}</p>
+                  )}
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={submitMovement}
+                      disabled={moveSubmitting}
+                      className="flex-1 bg-green-500 hover:bg-green-600 text-white"
+                    >
+                      {moveSubmitting ? "กำลังบันทึก..." : "บันทึก"}
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        setMoveType(null);
+                        setMoveAmount("");
+                        setMoveReason("");
+                        setMoveError("");
+                      }}
+                      variant="outline"
+                      className="flex-1"
+                    >
+                      ยกเลิก
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {movements.length > 0 && (
+                <div className="space-y-1 mt-3">
+                  {movements.map((m) => (
+                    <div
+                      key={m.id}
+                      className="flex items-center justify-between text-sm bg-white rounded-lg px-3 py-2"
+                    >
+                      <span className="text-slate-600 truncate">
+                        {m.type === "IN" ? "เงินเข้า" : "เงินออก"}
+                        {m.reason ? ` • ${m.reason}` : ""}
+                      </span>
+                      <span
+                        className={`font-semibold shrink-0 ml-2 ${
+                          m.type === "IN" ? "text-blue-600" : "text-orange-600"
+                        }`}
+                      >
+                        {m.type === "IN" ? "+" : "−"}
+                        {formatCurrency(m.amount)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <hr className="border-green-200" />

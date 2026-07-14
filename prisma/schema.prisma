@@ -219,6 +219,7 @@ model Shift {
   boothEvent BoothEvent? @relation(fields: [boothEventId], references: [id])
   staff      User        @relation(fields: [staffId], references: [id])
   orders     Order[]
+  cashMovements CashMovement[]
 
   @@index([branchId])
   @@index([boothEventId])
@@ -313,4 +314,47 @@ model InventoryItem {
 
   @@index([branchId])
   @@index([boothEventId])
+}
+
+// ==================== Cash Drawer Movements ====================
+// Cash paid into / out of the drawer during a shift (pay-outs, drops, change
+// fund). Feeds shift reconciliation so real shortages and normal pay-outs are
+// distinguishable. Rolled out to prod via runtime ensure (see ensure-schema-extras.ts).
+model CashMovement {
+  id        String   @id @default(cuid())
+  shiftId   String
+  type      String   // IN | OUT
+  amount    Float
+  reason    String   @default("")
+  staffId   String
+  createdAt DateTime @default(now())
+
+  shift Shift @relation(fields: [shiftId], references: [id])
+
+  @@index([shiftId])
+}
+
+// ==================== Activity / Audit Log ====================
+// Append-only record of sensitive actions (voids, deletes, price/staff/setting
+// changes). Best-effort — writing a log never blocks the underlying action.
+model ActivityLog {
+  id        String   @id @default(cuid())
+  userId    String   @default("")
+  userName  String   @default("")
+  action    String   // ORDER_VOID | ORDER_DELETE | MENU_UPDATE | SETTINGS_UPDATE ...
+  entity    String   @default("")
+  entityId  String   @default("")
+  detail    String   @default("")
+  branchId  String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([action])
+}
+
+// ==================== Settings (key-value) ====================
+model Setting {
+  key       String   @id
+  value     String   @default("")
+  updatedAt DateTime @updatedAt
 }

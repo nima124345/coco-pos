@@ -11,6 +11,7 @@ import { requireAuth } from "@/lib/session";
 import { managerPermissionDenied } from "@/lib/authz";
 import { round2 } from "@/lib/utils";
 import { ensureIndexes } from "@/lib/ensure-indexes";
+import { logActivity, ACTIVITY } from "@/lib/activity";
 
 export async function GET(req: NextRequest) {
   const auth = await requireAuth(req);
@@ -200,5 +201,12 @@ export async function DELETE(req: NextRequest) {
   if (delDenied) return delDenied;
 
   await prisma.expense.delete({ where: { id } });
+  await logActivity({
+    userId: auth.uid,
+    action: ACTIVITY.EXPENSE_DELETE,
+    entity: "expense",
+    entityId: id,
+    branchId: existing.branchId,
+  });
   return NextResponse.json({ success: true });
 }

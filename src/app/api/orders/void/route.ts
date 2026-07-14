@@ -5,6 +5,7 @@ import { requireAuth } from "@/lib/session";
 import { inactiveUserDenied } from "@/lib/authz";
 import { assertContextAccess } from "@/lib/branch";
 import { rateLimit, rateLimitReset } from "@/lib/rate-limit";
+import { logActivity, ACTIVITY } from "@/lib/activity";
 
 export async function POST(req: NextRequest) {
   // Must be logged in; the admin password below is an extra confirmation so a
@@ -96,6 +97,15 @@ export async function POST(req: NextRequest) {
       status: "VOIDED",
       voidReason: `${reason} ${stamp}`,
     },
+  });
+
+  await logActivity({
+    userId: auth.uid,
+    action: ACTIVITY.ORDER_VOID,
+    entity: "order",
+    entityId: orderId,
+    detail: `${reason} • อนุมัติโดย ${approvedBy}`,
+    branchId: order.branchId,
   });
 
   return NextResponse.json(updated);

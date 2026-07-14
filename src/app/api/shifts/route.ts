@@ -4,6 +4,7 @@ import { getContext, contextWhere, isPrivileged } from "@/lib/branch";
 import { requireAuth } from "@/lib/session";
 import { inactiveUserDenied } from "@/lib/authz";
 import { round2 } from "@/lib/utils";
+import { ensureSchemaExtras } from "@/lib/ensure-schema-extras";
 
 export async function GET(req: NextRequest) {
   const auth = await requireAuth(req);
@@ -117,8 +118,22 @@ export async function PUT(req: NextRequest) {
     );
   }
 
+  // Fold cash drawer movements into the expected total so pay-outs/drops don't
+  // read as a shortage: expected = opening + cash sales + cash in - cash out.
+  await ensureSchemaExtras();
+  const movements = await prisma.cashMovement.findMany({
+    where: { shiftId },
+    select: { type: true, amount: true },
+  });
+  const cashIn = movements
+    .filter((m) => m.type === "IN")
+    .reduce((sum, m) => sum + m.amount, 0);
+  const cashOut = movements
+    .filter((m) => m.type === "OUT")
+    .reduce((sum, m) => sum + m.amount, 0);
+
   const cashSales = shift.orders.reduce((sum, o) => sum + o.netTotal, 0);
-  const expectedCash = round2(shift.openingCash + cashSales);
+  const expectedCash = round2(shift.openingCash + cashSales + cashIn - cashOut);
   const cashDifference = round2(closing - expectedCash);
 
   const updated = await prisma.shift.update({

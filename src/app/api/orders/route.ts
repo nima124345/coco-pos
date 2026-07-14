@@ -10,6 +10,7 @@ import { requireAdmin, requireAuth } from "@/lib/session";
 import { managerPermissionDenied, inactiveUserDenied } from "@/lib/authz";
 import { round2 } from "@/lib/utils";
 import { ensureIndexes } from "@/lib/ensure-indexes";
+import { logActivity, ACTIVITY } from "@/lib/activity";
 
 export async function GET(req: NextRequest) {
   const auth = await requireAuth(req);
@@ -116,6 +117,14 @@ export async function DELETE(req: NextRequest) {
     prisma.orderItem.deleteMany({ where: { orderId: id } }),
     prisma.order.delete({ where: { id } }),
   ]);
+
+  await logActivity({
+    userId: auth.uid,
+    action: ACTIVITY.ORDER_DELETE,
+    entity: "order",
+    entityId: id,
+    detail: "ลบออเดอร์ที่ยกเลิกแล้ว",
+  });
 
   return NextResponse.json({ success: true });
 }

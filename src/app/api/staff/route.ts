@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { requireAdmin } from "@/lib/session";
 import { managerPermissionDenied } from "@/lib/authz";
+import { logActivity, ACTIVITY } from "@/lib/activity";
 import { ensureAttendanceTable } from "@/lib/ensure-attendance";
 import { ensurePermissionsColumn } from "@/lib/ensure-permissions";
 import { parsePermissions, serializePermissions } from "@/lib/permissions";
@@ -142,6 +143,14 @@ export async function POST(req: NextRequest) {
     },
   });
 
+  await logActivity({
+    userId: auth.uid,
+    action: ACTIVITY.STAFF_CREATE,
+    entity: "user",
+    entityId: user.id,
+    detail: `${user.name} (${user.username}) • ${user.role}`,
+  });
+
   return NextResponse.json(user);
 }
 
@@ -220,6 +229,13 @@ export async function PUT(req: NextRequest) {
         createdAt: true,
       },
     });
+    await logActivity({
+      userId: auth.uid,
+      action: ACTIVITY.STAFF_UPDATE,
+      entity: "user",
+      entityId: user.id,
+      detail: `${user.name} (${user.username})`,
+    });
     return NextResponse.json(user);
   } catch (e) {
     const msg = (e as Error).message?.toLowerCase() ?? "";
@@ -270,6 +286,13 @@ export async function DELETE(req: NextRequest) {
   await ensureAttendanceTable();
   await prisma.attendance.deleteMany({ where: { staffId: id } });
   await prisma.user.delete({ where: { id } });
+
+  await logActivity({
+    userId: auth.uid,
+    action: ACTIVITY.STAFF_DELETE,
+    entity: "user",
+    entityId: id,
+  });
 
   return NextResponse.json({ ok: true });
 }

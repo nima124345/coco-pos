@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAdmin, requireAuth } from "@/lib/session";
 import { managerPermissionDenied } from "@/lib/authz";
+import { logActivity, ACTIVITY } from "@/lib/activity";
 
 export async function GET(req: NextRequest) {
   const auth = await requireAuth(req);
@@ -53,5 +54,11 @@ export async function DELETE(req: NextRequest) {
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
   await prisma.promotion.delete({ where: { id } });
+  await logActivity({
+    userId: auth.uid,
+    action: ACTIVITY.PROMOTION_DELETE,
+    entity: "promotion",
+    entityId: id,
+  });
   return NextResponse.json({ success: true });
 }

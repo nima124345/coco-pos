@@ -39,6 +39,7 @@ interface DashboardData {
   expenseByCategory: { name: string; amount: number; color: string }[];
   salesByBranch: { id: string; name: string; sales: number; orders: number }[];
   salesByBooth: { id: string; name: string; sales: number; orders: number }[];
+  lowStock: { name: string; quantity: number; minStock: number; unit: string }[];
 }
 
 type ScopeMode = "current" | "all" | "all-branches" | "all-booths";
@@ -303,6 +304,42 @@ export default function AdminDashboard() {
           </div>
         </Card>
       </section>
+
+      {data.lowStock && data.lowStock.length > 0 && (
+        <section>
+          <Card className="p-5 border-amber-200 bg-amber-50/50">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">⚠️</span>
+                <h3 className="font-bold text-amber-800">
+                  สินค้าใกล้หมด ({data.lowStock.length})
+                </h3>
+              </div>
+              <Link
+                href="/admin/inventory"
+                className="text-sm font-medium text-amber-700 hover:underline"
+              >
+                จัดการสต็อก
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {data.lowStock.map((item, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-amber-100"
+                >
+                  <span className="text-sm font-medium text-slate-700 truncate">
+                    {item.name}
+                  </span>
+                  <span className="text-sm font-semibold text-amber-700 shrink-0 ml-2">
+                    {item.quantity}/{item.minStock} {item.unit}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </section>
+      )}
 
       {(data.salesByBranch.length > 1 || data.salesByBooth.length > 0) && (
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
